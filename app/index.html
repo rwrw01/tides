@@ -127,8 +127,8 @@ const inMin = (ms, now) => { const m = Math.round((ms-now)/60000);
   return m >= 60 ? 'over ' + Math.floor(m/60) + ' u ' + String(m%60).padStart(2,'0') + ' m' : 'over ' + m + ' m'; };
 
 /* -------- kaart -------- */
-const TILE_LIGHT = 'https://{s}.basemap.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-const TILE_DARK  = 'https://{s}.basemap.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 const TILE_SAT   = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 const darkMq = matchMedia('(prefers-color-scheme: dark)');
 let map = null, marker = null, base = null, satOn = false;
@@ -206,7 +206,10 @@ async function fetchSeries(lat, lon){
     if (raw[i] === null || raw[i] === undefined) continue;
     t.push(Date.parse(times[i] + ':00Z')); h.push(raw[i]);
   }
-  if (h.length < 30) throw new Error('Geen zeedata hier — zet de pin dichter bij open zee');
+  if (h.length < 30){
+    const e = new Error('Geen getijdedata hier (binnenland of ver van zee) — kaart en radar werken wél');
+    e.soft = true; throw e;
+  }
   return { t, h, utcOffset: (j.utc_offset_seconds || 0) * 1000 };
 }
 function findExtrema(t, h){
@@ -241,7 +244,8 @@ function selectLocation(lat, lon){
     try { localStorage.setItem('tidepin', JSON.stringify({lat, lon})); } catch(e){}
     render(s);
   }).catch(err => {
-    hint.className='hint err'; hint.textContent = err.message || 'Er ging iets mis';
+    hint.className = err && err.soft ? 'hint' : 'hint err';
+    hint.textContent = (err && err.soft ? '🌍 ' : '⚠️ ') + (err.message || 'Er ging iets mis');
   });
 }
 function render(s){

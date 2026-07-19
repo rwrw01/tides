@@ -321,7 +321,7 @@ let map = null, marker = null;
 function initMap(){
   if (typeof L === 'undefined'){ $('mapFallback').style.display='block'; $('map').style.display='none'; return; }
   map = L.map('map', {worldCopyJump:true}).setView([46.5, 2.0], 4);
-  L.tileLayer('https://{s}.basemap.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
     maxZoom: 17, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
   }).addTo(map);
   map.on('click', e => selectLocation(e.latlng.lat, e.latlng.lng, null));
