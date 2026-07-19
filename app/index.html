@@ -451,20 +451,23 @@ function findExtrema(t, h){
 }
 
 /* -------- UI -------- */
-let lastPin = null;
+let lastPin = null, tideSeq = 0;
 function selectLocation(lat, lon){
   lat = Math.round(lat*1e4)/1e4; lon = Math.round(lon*1e4)/1e4;
   lastPin = { lat, lon };
+  const seq = ++tideSeq; // verouderde responses (snelle pin-wissel) negeren
   loadWeather(lat, lon);
   if (map){ if (marker) marker.setLatLng([lat,lon]); else marker = L.marker([lat,lon]).addTo(map); }
   $('locName').textContent = Math.abs(lat).toFixed(2)+'°'+(lat>=0?'N':'Z')+' '+Math.abs(lon).toFixed(2)+'°'+(lon>=0?'O':'W');
   const hint = $('hint'); hint.className='hint'; hint.style.display='block'; hint.textContent='Laden…';
   $('data').style.display='none'; $('pill').style.display='none';
   fetchSeries(lat, lon).then(s => {
+    if (seq !== tideSeq) return;
     try { localStorage.setItem('tidepin', JSON.stringify({lat, lon})); } catch(e){}
     render(s);
     renderAstro(lat, lon, s.utcOffset);
   }).catch(err => {
+    if (seq !== tideSeq) return;
     hint.className = err && err.soft ? 'hint' : 'hint err';
     hint.textContent = (err && err.soft ? '🌍 ' : '⚠️ ') + (err.message || 'Er ging iets mis');
     if (err && err.soft){ try { localStorage.setItem('tidepin', JSON.stringify({lat, lon})); } catch(e){} }
@@ -700,8 +703,9 @@ async function fetchWeather(lat, lon){
 }
 const DAYS_NL = ['zo','ma','di','wo','do','vr','za'];
 function renderWeer(wx){
-  $('wxHint').style.display = 'none'; $('wx').style.display = 'block';
   const c = wx.current || {};
+  if (typeof c.temperature_2m !== 'number') throw new Error('Onvolledige weerdata van het gekozen model');
+  $('wxHint').style.display = 'none'; $('wx').style.display = 'block';
   const [ic, desc] = WMO(c.weather_code);
   $('wxTemp').textContent = Math.round(c.temperature_2m) + '°';
   $('wxIcon').textContent = ic;
@@ -727,8 +731,8 @@ function renderWxBody(){
   let i0 = times.findIndex(t => Date.parse(t + ':00Z') >= nowLocal - 3600e3);
   if (i0 < 0) i0 = 0;
   const N = wxRange === 'dag' ? Math.min(24, times.length - i0) : (times.length - i0);
-  const temps = h.temperature_2m.slice(i0, i0 + N).filter(v => v !== null);
-  const rains = h.precipitation.slice(i0, i0 + N);
+  const temps = (h.temperature_2m || []).slice(i0, i0 + N).filter(v => v !== null);
+  const rains = (h.precipitation || []).slice(i0, i0 + N);
   // grafiek: dag = 24 uur met uurticks, week = hele reeks met dagticks
   if (temps.length > 3){
     const W = 360, H = 88, pT = 14, pB = 14, M = temps.length;
@@ -768,7 +772,7 @@ function renderWxBody(){
     const wmax = Math.max(...(d.temperature_2m_max || [1]).filter(v => v !== null));
     $('wxDays').innerHTML = dt.map((day, i) => {
       const code = d.weather_code ? d.weather_code[i] : null;
-      const mn = d.temperature_2m_min[i], mx = d.temperature_2m_max[i];
+      const mn = (d.temperature_2m_min || [])[i], mx = (d.temperature_2m_max || [])[i];
       if (mn === null || mx === null) return '';
       const dd = new Date(day + 'T12:00Z');
       const [dic] = WMO(code);
@@ -784,14 +788,15 @@ function renderWxBody(){
     }).join('');
   } else {
     const rows = [];
+    const ht = h.temperature_2m || [], hp = h.precipitation || [];
     for (let i = i0; i < Math.min(i0 + 24, times.length); i++){
-      if (h.temperature_2m[i] === null) continue;
+      if (ht[i] === null || ht[i] === undefined) continue;
       const [ic2] = WMO(h.weather_code ? h.weather_code[i] : null);
-      const pv = h.precipitation[i];
+      const pv = hp[i];
       rows.push(`<div class="wx-row"><span class="dy">${times[i].slice(11, 13)}u</span>` +
         `<span class="ic">${ic2}</span>` +
         `<span class="pr">${pv > 0 ? pv.toFixed(1) + ' mm' : ''}</span>` +
-        `<span style="flex:1"></span><span class="tmax">${Math.round(h.temperature_2m[i])}°</span></div>`);
+        `<span style="flex:1"></span><span class="tmax">${Math.round(ht[i])}°</span></div>`);
     }
     $('wxDays').innerHTML = rows.join('');
   }
@@ -976,11 +981,15 @@ sheetEl.addEventListener('touchend', e => {
 }, { passive: true });
 
 /* -------- weer + nachthemel laden -------- */
+let wxSeq = 0;
 function loadWeather(lat, lon){
+  const seq = ++wxSeq; // verouderde responses (snelle pin-wissel) negeren
   fetchWeather(lat, lon).then(wx => {
+    if (seq !== wxSeq) return;
     renderWeer(wx);
     renderNacht(lat, lon, wx);
   }).catch(err => {
+    if (seq !== wxSeq) return;
     if (lastWx) return; // houd de vorige weergave; beter dan alles weghalen
     $('wxHint').style.display = 'block';
     $('wxHint').textContent = '⚠️ ' + (err.message || 'Weerdata niet beschikbaar');
@@ -1011,7 +1020,8 @@ $('locBtn').addEventListener('click', () => {
 });
 try {
   const saved = JSON.parse(localStorage.getItem('tidepin') || 'null');
-  if (saved && typeof saved.lat === 'number'){
+  if (saved && typeof saved.lat === 'number' && typeof saved.lon === 'number' &&
+      Math.abs(saved.lat) <= 90 && Math.abs(saved.lon) <= 180){
     if (map) map.setView([saved.lat, saved.lon], 8);
     selectLocation(saved.lat, saved.lon);
   }
