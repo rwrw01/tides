@@ -463,13 +463,13 @@ function renderAstro(lat, lon, offset){
   const f = t => (t && !isNaN(t)) ? clock(t + offset) : '—';
   $('sunrise').textContent = f(T.sunrise);
   $('sunset').textContent = f(T.sunset);
-  $('goldenM').textContent = isNaN(T.goldenEnd) ? '' : 'golden hour tot ' + f(T.goldenEnd);
-  $('goldenE').textContent = isNaN(T.goldenStart) ? '' : 'golden hour v.a. ' + f(T.goldenStart);
+  $('goldenM').textContent = isNaN(T.goldenEnd) ? '' : 'golden tot ' + f(T.goldenEnd);
+  $('goldenE').textContent = isNaN(T.goldenStart) ? '' : 'golden v.a. ' + f(T.goldenStart);
   if (!isNaN(T.sunrise) && !isNaN(T.sunset)){
     const m = Math.round((T.sunset - T.sunrise) / 60000);
-    $('daylen').textContent = Math.floor(m/60) + ' u ' + String(m%60).padStart(2,'0') + ' m';
+    $('daylen').textContent = Math.floor(m/60) + 'u' + String(m%60).padStart(2,'0');
   } else $('daylen').textContent = '—';
-  $('noonS').textContent = 'hoogste punt ' + f(T.noon);
+  $('noonS').textContent = 'zenit ' + f(T.noon);
   const mt = moonTimes(midnight, lat, lon);
   $('moonrise').textContent = mt.rise ? f(mt.rise) : '—';
   $('moonset').textContent = mt.set ? f(mt.set) : '—';
