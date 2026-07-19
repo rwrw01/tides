@@ -1,9 +1,51 @@
-// Echte end-to-end tests: draaien in CI (GitHub Actions) met vol internet,
-// dus tegen de echte kaart-, radar- en getijden-API's. iPhone-viewport.
+// E2E in CI (GitHub Actions, vol internet). Kaarttegels, radar, OWM-key en
+// de Lorenz-atlas worden LIVE getest. Open-Meteo wordt gestubd: GitHub-runners
+// delen IP-ranges die door Open-Meteo geregeld gethrottled worden (429),
+// waardoor live-tests structureel flaky zijn; het API-contract wordt apart
+// bewaakt door tests/datasources.mjs (1 call per bron, wekelijks + per push).
 const { test, expect } = require('@playwright/test');
 
-test.describe('Getijden-app (live databronnen)', () => {
+function marineFixture(url){
+  const lat = parseFloat(url.searchParams.get('latitude'));
+  const lon = parseFloat(url.searchParams.get('longitude'));
+  const inland = (lat > 45 && lon > 10) || (Math.abs(lat) < 0.5 && Math.abs(lon) < 0.5); // Praag e.d.
+  const start = new Date(); start.setHours(0,0,0,0); start.setDate(start.getDate()-1);
+  const pad = x => String(x).padStart(2,'0');
+  const time=[], vals=[], wave=[], sst=[];
+  for (let i=0;i<72;i++){ const d=new Date(start.getTime()+i*3600e3);
+    time.push(`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:00`);
+    vals.push(inland?null:+(1.7*Math.cos(2*Math.PI*i/12.4206)+0.55*Math.cos(2*Math.PI*i/12)).toFixed(3));
+    wave.push(inland?null:+(1.1+0.7*Math.sin(i/5)).toFixed(2)); sst.push(inland?null:13.4); }
+  return { utc_offset_seconds: 7200,
+    hourly: { time, sea_level_height_msl: vals, wave_height: wave, sea_surface_temperature: sst } };
+}
+function forecastFixture(){
+  const start = new Date(); start.setHours(0,0,0,0);
+  const pad = x => String(x).padStart(2,'0');
+  const time=[], temp=[], prec=[], cloud=[], code=[];
+  for (let i=0;i<168;i++){ const d=new Date(start.getTime()+i*3600e3);
+    time.push(`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:00`);
+    temp.push(+(15+8*Math.sin(2*Math.PI*(i-9)/24)).toFixed(1));
+    prec.push(i%13===0?0.8:0); cloud.push(Math.round(50+45*Math.sin(i/7))); code.push(i%13===0?61:2); }
+  const dtime=[], wmax=[], wmin=[], wcode=[], psum=[], pprob=[];
+  for (let k=0;k<7;k++){ const d=new Date(start.getTime()+k*86400e3);
+    dtime.push(`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`);
+    wmax.push(21+k%3); wmin.push(11+k%2); wcode.push([1,3,61,80,2,0,95][k]);
+    psum.push([0,1.2,4,0,0,2.2,6][k]); pprob.push([5,40,80,10,0,60,90][k]); }
+  return { utc_offset_seconds: 7200,
+    current: { temperature_2m:18.4, apparent_temperature:17.2, dew_point_2m:12.1, precipitation:0,
+               weather_code:2, wind_speed_10m:14, wind_direction_10m:230, wind_gusts_10m:33 },
+    hourly: { time, temperature_2m:temp, precipitation:prec, cloud_cover:cloud, weather_code:code },
+    daily: { time:dtime, weather_code:wcode, temperature_2m_max:wmax, temperature_2m_min:wmin,
+             precipitation_sum:psum, precipitation_probability_max:pprob } };
+}
+
+test.describe('Getijden-app (UI; tegels/radar/atlas live, Open-Meteo gestubd)', () => {
   test.beforeEach(async ({ page }) => {
+    await page.route('**marine-api.open-meteo.com/**', route =>
+      route.fulfill({ json: marineFixture(new URL(route.request().url())) }));
+    await page.route('**api.open-meteo.com/**', route =>
+      route.fulfill({ json: forecastFixture() }));
     await page.goto('/app/index.html');
   });
 
@@ -74,7 +116,7 @@ test.describe('Getijden-app (live databronnen)', () => {
     await expect(page.locator('#nxBortleS')).toHaveText(/mag\/arcsec/);
   });
 
-  test('getij op zee: Scheveningen toont data', async ({ page }) => {
+  test('getij op zee: Scheveningen toont data (gestubde API)', async ({ page }) => {
     await page.evaluate(() => selectLocation(52.115, 4.24));
     await expect(page.locator('#data')).toBeVisible({ timeout: 25_000 });
     await expect(page.locator('#hwT')).toHaveText(/\d{2}:\d{2}/);
@@ -142,7 +184,7 @@ test.describe('Getijden-app (live databronnen)', () => {
     await expect(page.locator('#cfgSheet')).toBeHidden();
   });
 
-  test('weer-paneel: actueel + 7 dagen (live API)', async ({ page }) => {
+  test('weer-paneel: actueel + 7 dagen (gestubde API)', async ({ page }) => {
     await page.evaluate(() => selectLocation(52.115, 4.24));
     await expect(page.locator('#wx')).toBeVisible({ timeout: 25_000 });
     await expect(page.locator('#wxTemp')).toHaveText(/-?\d+°/);
