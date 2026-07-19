@@ -61,6 +61,44 @@ test.describe('Getijden-app (UI; tegels/radar/atlas live, Open-Meteo gestubd)', 
     expect(src).toContain('basemaps.cartocdn.com');
   });
 
+  test('kaart blijft licht in dark mode', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.reload();
+    await page.waitForFunction(
+      () => document.querySelectorAll('#map img.leaflet-tile-loaded').length >= 1,
+      null, { timeout: 25_000 });
+    const srcs = await page.evaluate(() =>
+      [...document.querySelectorAll('#map img.leaflet-tile')].map(i => i.src));
+    expect(srcs.some(s => s.includes('voyager'))).toBeTruthy();
+    expect(srcs.some(s => s.includes('dark_all'))).toBeFalsy();
+  });
+
+  test('locaties: vastzetten, kiezen uit lijst, swipe-verwijderen', async ({ page }) => {
+    await page.evaluate(() => selectLocation(52.115, 4.24));
+    await expect(page.locator('#pinBtn')).toBeVisible({ timeout: 15_000 });
+    await page.click('#pinBtn');
+    await expect(page.locator('#pinBtn')).toHaveClass(/on/);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('savedlocs')).length)).toBe(1);
+    // kiezen uit de lijst
+    await page.evaluate(() => selectLocation(43.66, 7.25));
+    await page.click('#listBtn');
+    await expect(page.locator('#locList .loc-item')).toHaveCount(1);
+    await page.click('#locList .loc-main');
+    await expect(page.locator('#locSheet')).toBeHidden();
+    await expect(page.locator('#locName')).toHaveText(/52\.12°N/, { timeout: 10_000 });
+    // swipe naar links (iOS-patroon) en verwijderen
+    await page.click('#listBtn');
+    const box = await page.locator('#locList .loc-main').boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 - 130, box.y + box.height / 2, { steps: 6 });
+    await page.mouse.up();
+    await expect(page.locator('#locList .loc-main')).toHaveClass(/open/);
+    await page.click('#locList .loc-del');
+    await expect(page.locator('#locList .loc-item')).toHaveCount(0);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('savedlocs')).length)).toBe(0);
+  });
+
   test('lagenmenu: satelliet-basiskaart wisselt naar Esri-tegels', async ({ page }) => {
     await page.waitForFunction(
       () => document.querySelectorAll('#map img.leaflet-tile-loaded').length >= 1,

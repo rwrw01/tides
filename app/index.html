@@ -95,6 +95,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
 .sw::after{content:'';position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
 .sw.on{background:#34c759}.sw.on::after{left:20px}
 .cfg-done{margin-top:.9rem;width:100%;padding:.6rem;border:0;border-radius:10px;background:var(--blue);color:#fff;font-size:.95rem;font-weight:600;cursor:pointer}
+.cfg-btn.on{background:var(--blue);color:#fff}
+.cfg-card{max-height:78vh;overflow-y:auto}
+.loc-item{position:relative;overflow:hidden;border-bottom:1px solid var(--sep)}
+.loc-item:last-child{border-bottom:0}
+.loc-del{position:absolute;top:0;right:0;bottom:0;width:88px;border:0;background:#ff3b30;color:#fff;font-size:.85rem;font-weight:600;cursor:pointer}
+.loc-main{position:relative;z-index:1;background:var(--bg);display:flex;flex-direction:column;gap:2px;padding:.6rem .2rem;transition:transform .18s;touch-action:pan-y;cursor:pointer;user-select:none;-webkit-user-select:none}
+.loc-main .nm{font-size:.95rem;font-weight:600}
+.loc-main .sub{font-size:.74rem;color:var(--text-2)}
 .seg{display:flex;gap:6px;margin:.45rem 0 .7rem;flex-wrap:wrap}
 .seg button{flex:1;min-width:4.6rem;border:0;border-radius:9px;padding:.5rem .3rem;background:var(--tile);color:var(--text);font-size:.85rem;cursor:pointer}
 .seg button.on{background:var(--blue);color:#fff;font-weight:600}
@@ -156,6 +164,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
   <div class="loc-row">
     <div class="loc-name" id="locName">Getijden</div>
     <span class="pill" id="pill" style="display:none"></span>
+    <button class="cfg-btn" id="pinBtn" aria-label="Locatie vastzetten" style="display:none">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>
+    </button>
+    <button class="cfg-btn" id="listBtn" aria-label="Vastgezette locaties">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+    </button>
     <button class="cfg-btn" id="cfgBtn" aria-label="Panelen instellen">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h10v2H4zM17 6h3v2h-3zM4 11h4v2H4zM11 11h9v2h-9zM4 16h13v2H4zM20 16h0"/><circle cx="15.5" cy="7" r="2.4"/><circle cx="9.5" cy="12" r="2.4"/><circle cx="18.5" cy="17" r="2.4"/></svg>
     </button>
@@ -255,6 +269,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
   </div>
 </div>
 
+<div class="cfg-sheet" id="locSheet" hidden>
+  <div class="cfg-card">
+    <h3>Vastgezette locaties</h3>
+    <div id="locList"></div>
+    <button class="cfg-done" id="locDone">Klaar</button>
+  </div>
+</div>
+
 <div class="cfg-sheet" id="cfgSheet" hidden>
   <div class="cfg-card">
     <h3>Panelen</h3>
@@ -282,12 +304,11 @@ const inMin = (ms, now) => { const m = Math.round((ms-now)/60000);
 
 /* -------- kaart -------- */
 const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 const TILE_SAT   = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-const darkMq = matchMedia('(prefers-color-scheme: dark)');
 let map = null, marker = null, base = null, satOn = false;
 try { satOn = localStorage.getItem('mapbase') === 'sat'; } catch(e){}
-const baseUrl = () => satOn ? TILE_SAT : (darkMq.matches ? TILE_DARK : TILE_LIGHT);
+// kaart houdt bewust altijd de lichte look; alleen de UI volgt het systeemthema
+const baseUrl = () => satOn ? TILE_SAT : TILE_LIGHT;
 // iOS Safari: voorkom dat een pinch de hele pagina zoomt i.p.v. de kaart
 for (const ev of ['gesturestart','gesturechange','gestureend'])
   document.addEventListener(ev, e => e.preventDefault());
@@ -300,7 +321,6 @@ if (typeof L !== 'undefined'){
   }).setView([52.1, 4.3], 6);
   base = L.tileLayer(baseUrl(), {maxZoom:17,
     attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; CARTO &middot; beeld Esri'}).addTo(map);
-  darkMq.addEventListener('change', () => { if (!satOn) base.setUrl(baseUrl()); });
   map.on('click', e => selectLocation(e.latlng.lat, e.latlng.lng));
   window._map = map; // voor e2e-tests
 } else {
@@ -473,6 +493,7 @@ let lastPin = null, tideSeq = 0;
 function selectLocation(lat, lon, name){
   lat = Math.round(lat*1e4)/1e4; lon = Math.round(lon*1e4)/1e4;
   lastPin = { lat, lon, name: name || undefined };
+  updatePinBtn();
   const seq = ++tideSeq; // verouderde responses (snelle pin-wissel) negeren
   loadWeather(lat, lon);
   if (map){ if (marker) marker.setLatLng([lat,lon]); else marker = L.marker([lat,lon]).addTo(map); }
@@ -483,6 +504,8 @@ function selectLocation(lat, lon, name){
     $('locName').textContent = n;
     lastPin.name = n;
     try { localStorage.setItem('tidepin', JSON.stringify(lastPin)); } catch(e){}
+    const sv = savedLocs.find(l => locKey(l) === locKey(lastPin));
+    if (sv && !sv.name){ sv.name = n; saveLocs(); }
   }).catch(() => {}); // geen naam beschikbaar -> coördinaten blijven staan
   const hint = $('hint'); hint.className='hint'; hint.style.display='block'; hint.textContent='Laden…';
   $('data').style.display='none'; $('pill').style.display='none';
@@ -991,6 +1014,82 @@ $('cfgSheet').addEventListener('click', e => {
   applyPanels(); renderCfg();
 });
 applyPanels();
+
+/* -------- vastgezette locaties: opslaan, lijst, swipe-verwijderen -------- */
+const esc = x => String(x || '').replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let savedLocs = [];
+try { const sl = JSON.parse(localStorage.getItem('savedlocs')); if (Array.isArray(sl)) savedLocs = sl; } catch(e){}
+savedLocs = savedLocs.filter(l => typeof l.lat === 'number' && typeof l.lon === 'number' &&
+  Math.abs(l.lat) <= 90 && Math.abs(l.lon) <= 180);
+const saveLocs = () => { try { localStorage.setItem('savedlocs', JSON.stringify(savedLocs)); } catch(e){} };
+const locKey = p => p.lat.toFixed(3) + ',' + p.lon.toFixed(3);
+const coordsStr = p => Math.abs(p.lat).toFixed(2)+'°'+(p.lat>=0?'N':'Z')+' '+Math.abs(p.lon).toFixed(2)+'°'+(p.lon>=0?'O':'W');
+function updatePinBtn(){
+  $('pinBtn').style.display = lastPin ? 'flex' : 'none';
+  $('pinBtn').classList.toggle('on', !!(lastPin && savedLocs.some(l => locKey(l) === locKey(lastPin))));
+}
+function renderLocs(){
+  $('locList').innerHTML = savedLocs.length ? savedLocs.map((l, i) =>
+    '<div class="loc-item" data-i="' + i + '">' +
+      '<button class="loc-del" data-del="' + i + '">Verwijder</button>' +
+      '<div class="loc-main"><span class="nm">' + (esc(l.name) || coordsStr(l)) + '</span>' +
+      '<span class="sub">' + coordsStr(l) + '</span></div></div>').join('')
+    : '<div class="hint">Nog geen vastgezette locaties — zet een pin en tik op de vlag</div>';
+}
+$('pinBtn').addEventListener('click', () => {
+  if (!lastPin) return;
+  const i = savedLocs.findIndex(l => locKey(l) === locKey(lastPin));
+  if (i >= 0) savedLocs.splice(i, 1);
+  else savedLocs.unshift({ lat: lastPin.lat, lon: lastPin.lon, name: lastPin.name });
+  saveLocs(); updatePinBtn();
+});
+$('listBtn').addEventListener('click', () => { renderLocs(); $('locSheet').hidden = false; });
+$('locDone').addEventListener('click', () => { $('locSheet').hidden = true; });
+// swipe-naar-links (iOS-patroon) via pointer events: werkt voor touch en muis
+let locSwipe = null, locSwipeMoved = false;
+$('locList').addEventListener('pointerdown', e => {
+  const main = e.target.closest('.loc-main');
+  if (!main) return;
+  locSwipe = { main, x0: e.clientX, open: main.classList.contains('open') };
+  locSwipeMoved = false;
+  main.style.transition = 'none';
+});
+window.addEventListener('pointermove', e => {
+  if (!locSwipe) return;
+  const dx = e.clientX - locSwipe.x0 - (locSwipe.open ? 88 : 0);
+  if (Math.abs(e.clientX - locSwipe.x0) > 8) locSwipeMoved = true;
+  locSwipe.main.style.transform = 'translateX(' + Math.max(-88, Math.min(0, dx)) + 'px)';
+});
+window.addEventListener('pointerup', e => {
+  if (!locSwipe) return;
+  const { main, x0, open } = locSwipe;
+  main.style.transition = '';
+  const willOpen = (e.clientX - x0 - (open ? 88 : 0)) < -44;
+  main.classList.toggle('open', willOpen);
+  main.style.transform = willOpen ? 'translateX(-88px)' : '';
+  locSwipe = null;
+});
+$('locList').addEventListener('click', e => {
+  const del = e.target.closest('[data-del]');
+  if (del){
+    savedLocs.splice(+del.dataset.del, 1);
+    saveLocs(); renderLocs(); updatePinBtn();
+    return;
+  }
+  if (locSwipeMoved){ locSwipeMoved = false; return; }
+  const item = e.target.closest('.loc-item');
+  if (!item) return;
+  const main = item.querySelector('.loc-main');
+  if (main.classList.contains('open')){ main.classList.remove('open'); main.style.transform = ''; return; }
+  const l = savedLocs[+item.dataset.i];
+  if (l){
+    $('locSheet').hidden = true;
+    if (map) map.setView([l.lat, l.lon], 8);
+    selectLocation(l.lat, l.lon, l.name);
+  }
+});
+$('locSheet').addEventListener('click', e => { if (e.target === $('locSheet')) $('locSheet').hidden = true; });
 
 /* -------- sheet in-/uitklappen -------- */
 const sheetEl = $('sheet');

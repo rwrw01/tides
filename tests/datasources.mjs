@@ -8,8 +8,6 @@ const checks = [
     url: 'https://a.basemaps.cartocdn.com/rastertiles/voyager/6/32/21.png' },
   { name: 'CARTO Voyager retina (@2x)', critical: true, type: 'image',
     url: 'https://a.basemaps.cartocdn.com/rastertiles/voyager/6/32/21@2x.png' },
-  { name: 'CARTO Dark Matter-tegel', critical: true, type: 'image',
-    url: 'https://a.basemaps.cartocdn.com/dark_all/6/32/21.png' },
   { name: 'Esri satelliet-tegel', critical: false, type: 'image',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/6/21/32' },
   { name: 'Leaflet via unpkg', critical: true, type: 'text',
