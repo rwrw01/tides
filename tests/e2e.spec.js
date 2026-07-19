@@ -101,7 +101,11 @@ test.describe('Getijden-app (UI; tegels/radar/atlas live, Open-Meteo gestubd)', 
     await page.evaluate(() => window._map.setView([0, -60], 1)); // eerst 'verdwalen'
     await page.click('#locBtn');
     await expect(page.locator('#locName')).toHaveText(/52\.37°N/, { timeout: 15_000 });
-    await expect.poll(() => page.evaluate(() => window._map.getZoom()), { timeout: 8_000 }).toBe(9);
+    // gebruikersgedrag: kaart moet naar de eigen positie springen en inzoomen
+    await expect.poll(() => page.evaluate(() => window._map.getZoom()), { timeout: 8_000 }).toBeGreaterThanOrEqual(8);
+    const c = await page.evaluate(() => window._map.getCenter());
+    expect(Math.abs(c.lat - 52.37)).toBeLessThan(0.5);
+    expect(Math.abs(c.lng - 4.90)).toBeLessThan(0.5);
   });
 
   test('sheet klapt in en uit via de grabber', async ({ page }) => {

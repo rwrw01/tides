@@ -1010,9 +1010,14 @@ sel.addEventListener('change', () => {
 $('locBtn').addEventListener('click', () => {
   if (!navigator.geolocation){ return; }
   navigator.geolocation.getCurrentPosition(p => {
-    // zonder animatie: werkt ook als een eerdere zoomanimatie is blijven hangen
-    if (map) map.setView([p.coords.latitude, p.coords.longitude], 9, { animate: false });
-    selectLocation(p.coords.latitude, p.coords.longitude);
+    const ll = [p.coords.latitude, p.coords.longitude];
+    if (map){
+      map.stop(); // breek lopende pan/zoom-animaties af
+      map.setView(ll, 9, { animate: false });
+      // borging: in sommige geklemde staten slikt Leaflet de zoom in
+      requestAnimationFrame(() => { if (map.getZoom() < 8) map.setView(ll, 9, { reset: true }); });
+    }
+    selectLocation(ll[0], ll[1]);
   }, () => {
     const h = $('hint'); h.style.display='block'; h.className='hint err';
     h.textContent = 'Locatie niet beschikbaar — tik op de kaart';
