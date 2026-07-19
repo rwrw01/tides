@@ -263,7 +263,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
       <a href="https://eupl.eu/">EUPL-1.2</a> · <a href="https://github.com/rwrw01/tides">GitHub</a> ·
       data <a href="https://open-meteo.com">Open-Meteo</a> · radar <a href="https://www.rainviewer.com">RainViewer</a> ·
       lagen <a href="https://openweathermap.org">OpenWeatherMap</a> ·
-      licht <a href="https://djlorenz.github.io/astronomy/lp/">Lorenz-atlas</a> (niet voor navigatie)</div>
+      licht <a href="https://djlorenz.github.io/astronomy/lp/">Lorenz-atlas</a> ·
+      plaatsnamen <a href="https://nominatim.org">Nominatim/OSM</a> (niet voor navigatie)</div>
     <button class="cfg-done" id="cfgDone">Klaar</button>
   </div>
 </div>
@@ -401,6 +402,23 @@ async function fetchJson(url, tries = 2){
     else { const e = new Error('Kon geen data ophalen (HTTP ' + res.status + ')'); e.http = res.status; throw e; }
   }
 }
+async function placeName(lat, lon){
+  // Nominatim (OSM): plaatsnaam in de buurt; null als er niets dichtbij ligt
+  const res = await fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + lat +
+    '&lon=' + lon + '&zoom=10&accept-language=nl');
+  if (!res.ok) return null;
+  const j = await res.json();
+  if (!j || j.error || !j.address) return null;
+  const a = j.address;
+  const naam = a.city || a.town || a.village || a.municipality || a.suburb || a.county || null;
+  if (!naam) return null;
+  if (j.lat && j.lon){ // alleen gebruiken als de plek echt nabij is (< 30 km)
+    const dLat = (parseFloat(j.lat) - lat) * 111;
+    const dLon = (parseFloat(j.lon) - lon) * 111 * Math.cos(lat * Math.PI / 180);
+    if (Math.sqrt(dLat*dLat + dLon*dLon) > 30) return null;
+  }
+  return naam;
+}
 async function fetchSeries(lat, lon){
   const url = 'https://marine-api.open-meteo.com/v1/marine?latitude=' + lat.toFixed(4) +
     '&longitude=' + lon.toFixed(4) +
@@ -452,25 +470,32 @@ function findExtrema(t, h){
 
 /* -------- UI -------- */
 let lastPin = null, tideSeq = 0;
-function selectLocation(lat, lon){
+function selectLocation(lat, lon, name){
   lat = Math.round(lat*1e4)/1e4; lon = Math.round(lon*1e4)/1e4;
-  lastPin = { lat, lon };
+  lastPin = { lat, lon, name: name || undefined };
   const seq = ++tideSeq; // verouderde responses (snelle pin-wissel) negeren
   loadWeather(lat, lon);
   if (map){ if (marker) marker.setLatLng([lat,lon]); else marker = L.marker([lat,lon]).addTo(map); }
-  $('locName').textContent = Math.abs(lat).toFixed(2)+'°'+(lat>=0?'N':'Z')+' '+Math.abs(lon).toFixed(2)+'°'+(lon>=0?'O':'W');
+  $('locName').textContent = name ||
+    (Math.abs(lat).toFixed(2)+'°'+(lat>=0?'N':'Z')+' '+Math.abs(lon).toFixed(2)+'°'+(lon>=0?'O':'W'));
+  if (!name) placeName(lat, lon).then(n => {
+    if (seq !== tideSeq || !n) return;
+    $('locName').textContent = n;
+    lastPin.name = n;
+    try { localStorage.setItem('tidepin', JSON.stringify(lastPin)); } catch(e){}
+  }).catch(() => {}); // geen naam beschikbaar -> coördinaten blijven staan
   const hint = $('hint'); hint.className='hint'; hint.style.display='block'; hint.textContent='Laden…';
   $('data').style.display='none'; $('pill').style.display='none';
   fetchSeries(lat, lon).then(s => {
     if (seq !== tideSeq) return;
-    try { localStorage.setItem('tidepin', JSON.stringify({lat, lon})); } catch(e){}
+    try { localStorage.setItem('tidepin', JSON.stringify(lastPin)); } catch(e){}
     render(s);
     renderAstro(lat, lon, s.utcOffset);
   }).catch(err => {
     if (seq !== tideSeq) return;
     hint.className = err && err.soft ? 'hint' : 'hint err';
     hint.textContent = (err && err.soft ? '🌍 ' : '⚠️ ') + (err.message || 'Er ging iets mis');
-    if (err && err.soft){ try { localStorage.setItem('tidepin', JSON.stringify({lat, lon})); } catch(e){} }
+    if (err && err.soft){ try { localStorage.setItem('tidepin', JSON.stringify(lastPin)); } catch(e){} }
     // astronomie is client-side en werkt dus ook binnenland/offline
     const off = err && err.utcOffset !== undefined ? err.utcOffset : -new Date().getTimezoneOffset() * 60000;
     renderAstro(lat, lon, off);
@@ -1028,7 +1053,7 @@ try {
   if (saved && typeof saved.lat === 'number' && typeof saved.lon === 'number' &&
       Math.abs(saved.lat) <= 90 && Math.abs(saved.lon) <= 180){
     if (map) map.setView([saved.lat, saved.lon], 8);
-    selectLocation(saved.lat, saved.lon);
+    selectLocation(saved.lat, saved.lon, typeof saved.name === 'string' ? saved.name : undefined);
   }
 } catch(e){}
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});

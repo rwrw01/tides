@@ -38,6 +38,21 @@ const seaOk = page => page.route('**://marine-api.open-meteo.com/**', r => r.ful
 
 test.describe('Non-happy flows', () => {
 
+  test.beforeEach(async ({ page }) => {
+    // plaatsnamen deterministisch uit: hier testen we degradatie, geen geocoding
+    await page.route('**://nominatim.openstreetmap.org/**', r =>
+      r.fulfill({ json: { error: 'Unable to geocode' } }));
+  });
+
+  test('geocoding plat → coördinaten blijven gewoon staan', async ({ page }) => {
+    await seaOk(page); await wxOk(page);
+    await page.route('**://nominatim.openstreetmap.org/**', r => r.abort('failed'));
+    await page.goto('/app/index.html');
+    await page.evaluate(() => selectLocation(52.115, 4.24));
+    await expect(page.locator('#data')).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('#locName')).toHaveText(/52\.12°N/);
+  });
+
   test('getij-API geeft 500 → duidelijke fout, app blijft bedienbaar', async ({ page }) => {
     await wxOk(page);
     await page.route('**://marine-api.open-meteo.com/**', r => r.fulfill({ status: 500, body: 'boom' }));

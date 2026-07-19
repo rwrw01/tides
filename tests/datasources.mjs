@@ -50,6 +50,13 @@ const checks = [
     url: 'https://tile.openweathermap.org/map/clouds_new/6/32/21.png?appid=645b6d61fc5840fada8d370fc3d32896' },
   { name: 'Lorenz-atlas binaire tegel (NL: tegel 37,24)', critical: false, type: 'text',
     url: 'https://djlorenz.github.io/astronomy/binary_tiles/2024/binary_tile_37_24.dat.gz' },
+  { name: 'Nominatim reverse geocoding (Scheveningen)', critical: false, type: 'json',
+    url: 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=52.115&lon=4.24&zoom=10&accept-language=nl',
+    validate: j => {
+      const a = j.address || {};
+      const naam = a.city || a.town || a.village || a.municipality || a.suburb || a.county;
+      return naam ? 'ok: ' + naam : 'geen plaatsnaam in respons: ' + JSON.stringify(j).slice(0, 120);
+    } },
   { name: 'RainViewer weather-maps.json', critical: false, type: 'json',
     url: 'https://api.rainviewer.com/public/weather-maps.json',
     validate: j => {

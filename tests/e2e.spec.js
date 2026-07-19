@@ -46,6 +46,9 @@ test.describe('Getijden-app (UI; tegels/radar/atlas live, Open-Meteo gestubd)', 
       route.fulfill({ json: marineFixture(new URL(route.request().url())) }));
     await page.route('**://api.open-meteo.com/**', route =>
       route.fulfill({ json: forecastFixture() }));
+    // default: geen plaatsnaam, zodat coördinaat-asserts deterministisch blijven
+    await page.route('**://nominatim.openstreetmap.org/**', route =>
+      route.fulfill({ json: { error: 'Unable to geocode' } }));
     await page.goto('/app/index.html');
   });
 
@@ -139,6 +142,16 @@ test.describe('Getijden-app (UI; tegels/radar/atlas live, Open-Meteo gestubd)', 
     }, null, { timeout: 25_000 });
     await expect(page.locator('#nxBortle')).toHaveText(/klasse [1-9]|klasse 4–5/);
     await expect(page.locator('#nxBortleS')).toHaveText(/mag\/arcsec/);
+  });
+
+  test('plaatsnaam via reverse geocoding vervangt coördinaten', async ({ page }) => {
+    await page.route('**://nominatim.openstreetmap.org/**', route => {
+      const u = new URL(route.request().url());
+      route.fulfill({ json: { lat: u.searchParams.get('lat'), lon: u.searchParams.get('lon'),
+        address: { town: 'Teststad' } } });
+    });
+    await page.evaluate(() => selectLocation(52.115, 4.24));
+    await expect(page.locator('#locName')).toHaveText('Teststad', { timeout: 15_000 });
   });
 
   test('getij op zee: Scheveningen toont data (gestubde API)', async ({ page }) => {
