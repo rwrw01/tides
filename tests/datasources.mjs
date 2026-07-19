@@ -65,7 +65,14 @@ let criticalFail = 0;
 for (const c of checks) {
   let status = '❌', detail = '';
   try {
-    const res = await fetch(c.url, { signal: AbortSignal.timeout(15000) });
+    let res = null;
+    for (let attempt = 0; attempt < 3; attempt++){
+      try {
+        res = await fetch(c.url, { signal: AbortSignal.timeout(15000) });
+        if (res.ok || (res.status !== 429 && res.status < 500)) break;
+      } catch (netErr) { if (attempt === 2) throw netErr; }
+      await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+    }
     if (!res.ok) {
       detail = 'HTTP ' + res.status;
     } else if (c.type === 'image') {

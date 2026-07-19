@@ -42,9 +42,9 @@ function forecastFixture(){
 
 test.describe('Getijden-app (UI; tegels/radar/atlas live, Open-Meteo gestubd)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.route('**marine-api.open-meteo.com/**', route =>
+    await page.route('**://marine-api.open-meteo.com/**', route =>
       route.fulfill({ json: marineFixture(new URL(route.request().url())) }));
-    await page.route('**api.open-meteo.com/**', route =>
+    await page.route('**://api.open-meteo.com/**', route =>
       route.fulfill({ json: forecastFixture() }));
     await page.goto('/app/index.html');
   });
