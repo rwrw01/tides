@@ -61,6 +61,23 @@ test.describe('Getijden-app (UI; tegels/radar/atlas live, Open-Meteo gestubd)', 
     expect(src).toContain('basemaps.cartocdn.com');
   });
 
+  test('zoekveld: plaats zoeken en selecteren', async ({ page }) => {
+    await page.route('**://geocoding-api.open-meteo.com/**', route =>
+      route.fulfill({ json: { results: [
+        { name: 'Zeestad', latitude: 52.2, longitude: 4.3, admin1: 'Zuid-Holland', country: 'Nederland' },
+        { name: 'Zeestad-Buiten-Europa', latitude: -33.9, longitude: 18.4, country: 'Zuid-Afrika' },
+      ] } }));
+    await page.click('#searchBtn');
+    await page.fill('#searchIn', 'Zeestad');
+    await page.press('#searchIn', 'Enter');
+    await expect(page.locator('.sr-row')).toHaveCount(1); // buiten-Europa gefilterd
+    await page.click('.sr-row');
+    await expect(page.locator('#searchBar')).toBeHidden();
+    await expect(page.locator('#locName')).toHaveText('Zeestad', { timeout: 10_000 });
+    const c = await page.evaluate(() => window._map.getCenter());
+    expect(Math.abs(c.lat - 52.2)).toBeLessThan(0.5);
+  });
+
   test('kaart blijft licht in dark mode', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'dark' });
     await page.reload();

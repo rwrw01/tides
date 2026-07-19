@@ -44,6 +44,18 @@ test.describe('Non-happy flows', () => {
       r.fulfill({ json: { error: 'Unable to geocode' } }));
   });
 
+  test('zoeken plat → nette melding, app blijft bedienbaar', async ({ page }) => {
+    await seaOk(page); await wxOk(page);
+    await page.route('**://geocoding-api.open-meteo.com/**', r => r.abort('failed'));
+    await page.goto('/app/index.html');
+    await page.click('#searchBtn');
+    await page.fill('#searchIn', 'Scheveningen');
+    await page.press('#searchIn', 'Enter');
+    await expect(page.locator('.sr-none')).toHaveText(/mislukt/, { timeout: 10_000 });
+    await page.click('#searchClose');
+    await expect(page.locator('#searchBar')).toBeHidden();
+  });
+
   test('geocoding plat → coördinaten blijven gewoon staan', async ({ page }) => {
     await seaOk(page); await wxOk(page);
     await page.route('**://nominatim.openstreetmap.org/**', r => r.abort('failed'));
