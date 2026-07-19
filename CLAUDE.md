@@ -7,5 +7,6 @@
 - Meld afwegingen en beperkingen expliciet in plaats van ze weg te laten.
 
 ## Stijl en licentie
-- Elke pagina heeft een footer-colofon: gemaakt door Ralph Wagter, met Claude Code, vrij hergebruik, link naar de GitHub-repo.
+- Elke pagina heeft een colofon: gemaakt door Ralph Wagter, met Claude Code, vrij hergebruik, link naar de GitHub-repo.
+- Uitzondering app-weergave (app/): daar staat het colofon in het panelen-instellingenmenu i.p.v. een vaste footer, zodat de panelen de volledige schermruimte krijgen.
 - De repo gebruikt de EUPL-1.2-licentie.
