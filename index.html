@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eb &amp; Vloed Verkenner — getijden op elke plek ter wereld</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<style>
+:root{
+  --bg:#f4f8fb; --surface:#ffffff; --deep:#0b3d5c; --sea:#1276b0; --sea-2:#2fa3d6;
+  --accent:#e8590c; --text:#1c2b33; --text-2:#5b7280; --divider:#dbe6ee;
+  --ok:#2b8a3e; --warn:#c92a2a;
+  --s1:0 1px 3px rgba(11,61,92,.14),0 1px 2px rgba(11,61,92,.10);
+  --s2:0 4px 10px rgba(11,61,92,.16),0 2px 4px rgba(11,61,92,.10);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.55}
+header{background:linear-gradient(160deg,#0b3d5c,#1276b0);color:#fff;padding:2.2rem 1rem 2.6rem;text-align:center;position:relative;overflow:hidden}
+header h1{font-size:1.9rem;font-weight:600;letter-spacing:.01em}
+header p{opacity:.85;max-width:46rem;margin:.5rem auto 0;font-size:.95rem}
+.wave{position:absolute;left:0;right:0;bottom:-2px;height:26px}
+.container{max-width:960px;margin:0 auto;padding:1.5rem 1rem 3rem}
+section.card{background:var(--surface);border-radius:8px;box-shadow:var(--s1);padding:1.4rem;margin-bottom:1.6rem}
+section.card h2{color:var(--deep);font-size:1.25rem;margin-bottom:.6rem}
+section.card h3{color:var(--sea);font-size:1.02rem;margin:1.1rem 0 .4rem}
+p.lead{color:var(--text-2);font-size:.93rem;margin-bottom:.9rem}
+#map{height:380px;border-radius:6px;border:1px solid var(--divider);z-index:0}
+.map-fallback{display:none;background:#fff4e6;border:1px solid #ffd8a8;color:#7f4f24;padding:.8rem;border-radius:6px;font-size:.9rem;margin-bottom:.8rem}
+.presets{display:flex;flex-wrap:wrap;gap:.5rem;margin:.9rem 0 .3rem}
+.presets button, .btn{background:var(--sea);color:#fff;border:0;border-radius:99px;padding:.42rem .95rem;font-size:.85rem;cursor:pointer;box-shadow:var(--s1);transition:background .15s}
+.presets button:hover,.btn:hover{background:var(--deep)}
+.btn.secondary{background:#e7f0f7;color:var(--deep)}
+.btn.secondary:hover{background:#d4e5f2}
+.coords-row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-top:.7rem;font-size:.88rem;color:var(--text-2)}
+.coords-row input{width:7.2rem;padding:.35rem .5rem;border:1px solid var(--divider);border-radius:5px;font:inherit}
+#status{margin-top:.9rem;font-size:.92rem;color:var(--text-2);min-height:1.4em}
+#status.err{color:var(--warn)}
+.tide-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.8rem;margin:1rem 0}
+.tc{background:linear-gradient(160deg,#eaf4fb,#f7fbfe);border:1px solid var(--divider);border-radius:8px;padding:.85rem .95rem}
+.tc .lbl{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-2)}
+.tc .val{font-size:1.35rem;font-weight:600;color:var(--deep);margin-top:.15rem}
+.tc .sub{font-size:.8rem;color:var(--text-2)}
+.tc.hw .val{color:var(--sea)} .tc.lw .val{color:var(--accent)}
+figure.chart{margin:.6rem 0 0}
+figure.chart svg{width:100%;height:auto;display:block}
+figcaption{font-size:.78rem;color:var(--text-2);margin-top:.3rem}
+.badge{display:inline-block;font-size:.75rem;font-weight:700;border-radius:4px;padding:.12rem .5rem;margin-left:.4rem;vertical-align:middle}
+.badge.micro{background:#fff3bf;color:#8a6d00}.badge.meso{background:#d0ebff;color:#1864ab}.badge.macro{background:#ffe3e3;color:#c92a2a}.badge.none{background:#e9ecef;color:#495057}
+details.explain{border:1px solid var(--divider);border-radius:6px;margin:.6rem 0;background:#fbfdfe}
+details.explain summary{cursor:pointer;padding:.7rem .9rem;font-weight:600;color:var(--deep)}
+details.explain[open] summary{border-bottom:1px solid var(--divider)}
+details.explain .body{padding:.8rem .95rem;font-size:.92rem}
+.steps .step{display:none;background:#f1f8fc;border-left:4px solid var(--sea);padding:.7rem .9rem;border-radius:0 6px 6px 0;margin:.55rem 0;font-size:.92rem}
+.steps .step.shown{display:block;animation:fadein .35s}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.quiz{background:#f4fbf5;border:1px solid #c7e6cb;border-radius:6px;padding:.75rem .9rem;margin:.8rem 0;font-size:.92rem}
+.quiz input{width:6.5rem;padding:.3rem .45rem;border:1px solid #bcd;border-radius:5px;font:inherit;margin:0 .35rem}
+.quiz .fb{display:inline-block;margin-left:.4rem;font-weight:600}
+.quiz .fb.ok{color:var(--ok)} .quiz .fb.nok{color:var(--warn)}
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:.7rem 1.4rem;margin:.8rem 0}
+.sliders label{font-size:.88rem;color:var(--text-2);display:block}
+.sliders label b{color:var(--deep)}
+.sliders input[type=range]{width:100%;accent-color:var(--sea)}
+.mix-stats{font-size:.9rem;background:#eef6fb;border-radius:6px;padding:.6rem .8rem;margin:.5rem 0}
+.duel{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-top:.8rem}
+.duel .dc{border:1px solid var(--divider);border-radius:8px;padding:.8rem .9rem;background:#fbfdfe}
+.duel h4{font-size:.95rem;color:var(--deep);margin-bottom:.3rem}
+.duel .big{font-size:1.5rem;font-weight:700;color:var(--sea)}
+.duel .dc:last-child .big{color:var(--accent)}
+.duel .note{font-size:.8rem;color:var(--text-2)}
+@media(max-width:560px){.duel{grid-template-columns:1fr}}
+.amphi-wrap{display:flex;justify-content:center;margin:.6rem 0}
+.amphi-rot{transform-origin:170px 130px;animation:spin 12.42s linear infinite}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+footer{text-align:center;padding:1.6rem 1rem;color:var(--text-2);font-size:.82rem;border-top:1px solid var(--divider);background:var(--surface)}
+footer a{color:var(--sea);text-decoration:none}
+.src{font-size:.78rem;color:var(--text-2);margin-top:.8rem}
+.src a{color:var(--sea)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌊 Eb &amp; Vloed Verkenner</h1>
+  <p>Prik een pin op de kaart en zie de actuele waterstand, de komende hoog- en laagwaters en het getijverschil —
+     plus de uitleg waarom het getij in de Middellandse Zee zó anders is dan in de Golf van Biskaje.</p>
+  <svg class="wave" viewBox="0 0 900 26" preserveAspectRatio="none" aria-hidden="true"><path d="M0 16 Q 75 0 150 16 T 300 16 T 450 16 T 600 16 T 750 16 T 900 16 V 26 H 0 Z" fill="#f4f8fb"/></svg>
+</header>
+
+<div class="container">
+
+<!-- ======================= KAART ======================= -->
+<section class="card">
+  <h2>1 · Kies een plek op zee</h2>
+  <p class="lead">Klik op de kaart om een pin te zetten, of gebruik een van de voorbeeldlocaties. De app haalt dan de
+     berekende waterstand (t.o.v. gemiddeld zeeniveau) op voor gisteren + de komende drie dagen.</p>
+  <div class="map-fallback" id="mapFallback">De kaart kon niet geladen worden (geen verbinding met de kaart-server).
+     Je kunt hieronder wél coördinaten invullen of een voorbeeldlocatie kiezen.</div>
+  <div id="map" role="application" aria-label="Wereldkaart om een locatie te kiezen"></div>
+  <div class="presets" id="presets"></div>
+  <div class="coords-row">
+    <span>Of handmatig:</span>
+    <input type="number" id="latIn" step="0.0001" min="-90" max="90" placeholder="breedte (lat)">
+    <input type="number" id="lonIn" step="0.0001" min="-180" max="180" placeholder="lengte (lon)">
+    <button class="btn secondary" id="goBtn">Bereken</button>
+  </div>
+  <div id="status" aria-live="polite">Nog geen locatie gekozen.</div>
+</section>
+
+<!-- ======================= RESULTAAT ======================= -->
+<section class="card" id="resultCard" style="display:none">
+  <h2>2 · Getij op <span id="locLabel">—</span> <span id="classBadge"></span></h2>
+  <div class="tide-cards">
+    <div class="tc hw"><div class="lbl">Volgend hoogwater</div><div class="val" id="nextHw">—</div><div class="sub" id="nextHwSub"></div></div>
+    <div class="tc lw"><div class="lbl">Volgend laagwater</div><div class="val" id="nextLw">—</div><div class="sub" id="nextLwSub"></div></div>
+    <div class="tc"><div class="lbl">Gem. getijverschil</div><div class="val" id="rangeVal">—</div><div class="sub" id="rangeSub"></div></div>
+    <div class="tc"><div class="lbl">Getijtype</div><div class="val" id="regimeVal" style="font-size:1.05rem">—</div><div class="sub" id="regimeSub"></div></div>
+  </div>
+  <figure class="chart">
+    <svg id="tideSvg" viewBox="0 0 900 280" preserveAspectRatio="xMidYMid meet" aria-label="Grafiek van de waterstand"></svg>
+    <figcaption>Waterstand t.o.v. gemiddeld zeeniveau (MSL). ▲ = hoogwater, ▼ = laagwater, rode lijn = nu.
+      Tijden in de lokale tijdzone van de pin (<span id="tzLabel">—</span>).</figcaption>
+  </figure>
+  <div class="quiz" id="rangeQuiz" style="display:none">
+    ✏️ <b>Lees zelf af:</b> hoeveel meter zit er (ongeveer) tussen het eerstvolgende hoogwater en laagwater?
+    <input type="text" id="rangeAns" inputmode="decimal" placeholder="bijv. 3,2"> m
+    <button class="btn secondary" id="rangeCheck">Check</button><span class="fb" id="rangeFb"></span>
+  </div>
+</section>
+
+<!-- ======================= WAAROM VERSCHILT HET ======================= -->
+<section class="card">
+  <h2>3 · Waarom is het getij niet overal even groot?</h2>
+  <p class="lead">De maan en de zon trekken overal ongeveer even hard aan het water. Toch schommelt de zee bij
+     Saint-Malo wel <b>9&nbsp;meter</b> en bij Nice amper <b>20&nbsp;centimeter</b>. Ontdek stap voor stap hoe dat kan.</p>
+
+  <h3>Stap voor stap: van maan naar meters</h3>
+  <div class="steps" id="steps">
+    <div class="step shown"><b>Stap 1 — De motor.</b> De aantrekkingskracht van maan en zon geeft het oceaanwater
+      twee keer per dag een klein duwtje. Op open oceaan is die "getijgolf" zelf maar zo'n halve meter hoog.</div>
+    <div class="step"><b>Stap 2 — De slingerende badkuip.</b> Oceanen en zeeën zijn bakken met eigen
+      "klotsfrequenties", net als water in een badkuip. Komt het ritme van de maan (elke 12 u 25 min) in de buurt van
+      de klotsfrequentie van het bekken, dan treedt <b>resonantie</b> op en wordt het getij enorm versterkt.</div>
+    <div class="step"><b>Stap 3 — De draaiing van de aarde.</b> Door de draaiing van de aarde (het Coriolis-effect)
+      gaat de getijgolf niet heen en weer, maar <b>ronddraaien</b> in het bekken — om een stil middelpunt: het
+      <b>amfidromische punt</b>. Daar is het getijverschil bijna nul; hoe verder ervandaan, hoe groter het wordt.</div>
+    <div class="step"><b>Stap 4 — Ondiepe randen stuwen op.</b> Loopt de getijgolf een <b>ondiep continentaal plat</b>
+      of een trechtervormige baai in, dan wordt de energie samengeperst en groeit de golf — zoals bij de Golf van
+      Biskaje, het Kanaal en de Waddenzee.</div>
+  </div>
+  <button class="btn" id="stepBtn">Volgende stap ▸</button>
+
+  <h3>Het amfidromische punt in beeld</h3>
+  <p class="lead">De hoogwaterlijn (donkerblauw) draait in ± 12 u 25 min één keer rond het stille middelpunt.
+     De cirkels geven aan hoe het getijverschil naar buiten toe groeit.</p>
+  <div class="amphi-wrap">
+    <svg width="340" height="260" viewBox="0 0 340 260" aria-label="Animatie van een amfidromisch systeem">
+      <ellipse cx="170" cy="130" rx="150" ry="112" fill="#dff0fa" stroke="#9cc6e0"/>
+      <ellipse cx="170" cy="130" rx="100" ry="75" fill="none" stroke="#8ab8d6" stroke-dasharray="4 4"/>
+      <ellipse cx="170" cy="130" rx="50" ry="37" fill="none" stroke="#8ab8d6" stroke-dasharray="4 4"/>
+      <g class="amphi-rot">
+        <path d="M170 130 L318 118 A150 112 0 0 1 312 166 Z" fill="#1276b0" opacity=".55"/>
+        <line x1="170" y1="130" x2="319" y2="141" stroke="#0b3d5c" stroke-width="2.5"/>
+      </g>
+      <circle cx="170" cy="130" r="5" fill="#0b3d5c"/>
+      <text x="170" y="118" text-anchor="middle" font-size="11" fill="#0b3d5c" font-weight="700">amfidromisch punt</text>
+      <text x="170" y="131" text-anchor="middle" dy="14" font-size="10" fill="#5b7280">getijverschil ≈ 0</text>
+      <text x="268" y="106" font-size="10" fill="#5b7280">± 1 m</text>
+      <text x="308" y="76" font-size="10" fill="#5b7280">± 2 m</text>
+      <text x="30" y="245" font-size="10" fill="#5b7280">hoogwaterlijn draait rond in 12 u 25 min</text>
+    </svg>
+  </div>
+
+  <details class="explain">
+    <summary>🌍 Waarom heeft de Middellandse Zee dan bijna geen getij?</summary>
+    <div class="body">
+      Drie redenen versterken elkaar:
+      <ol style="margin:.5rem 0 .5rem 1.3rem">
+        <li><b>Bijna afgesloten:</b> de oceaangetijgolf kan alleen door de 14 km smalle Straat van Gibraltar naar
+            binnen — veel te weinig water om de hele zee mee te laten deinen.</li>
+        <li><b>Verkeerde maat badkuip:</b> de eigen klotsfrequentie van het bekken ligt ver van het 12 u 25 min-ritme
+            van de maan, dus er is géén resonantie die het getij opzweept.</li>
+        <li><b>Amfidromische punten middenin:</b> het kleine getij dat er wél is, draait rond stille punten die
+            (o.a. tussen Sicilië en Tunesië) midden in de zee liggen, dus blijft de kust overal dichtbij "nul".</li>
+      </ol>
+      Resultaat: meestal 10–30 cm verschil. Uitzonderingen: de noordelijke Adriatische Zee (Venetië, ± 1 m — een
+      langgerekt ondiep sub-bekken dat wél een beetje resoneert) en de Golf van Gabès in Tunesië (tot 2 m).
+    </div>
+  </details>
+  <details class="explain">
+    <summary>⛵ En waarom is het in de Golf van Biskaje juist zo groot?</summary>
+    <div class="body">
+      De Golf van Biskaje ligt <b>wijd open naar de Atlantische Oceaan</b>, ver van het amfidromische punt van dat
+      bekken. De halve meter oceaangetij loopt er een <b>breed, ondiep continentaal plat</b> op: de golf wordt
+      afgeremd en opgestuwd tot 3–5 m aan de Franse kust. Nog verder noordelijk werkt het Kanaal als trechter:
+      bij Saint-Malo en de Mont-Saint-Michel loopt het op tot ruim 9 m (bij springtij zelfs ~13 m) — en in de
+      trechtervormige Bay of Fundy in Canada, wereldrecordhouder, tot 16 m.
+    </div>
+  </details>
+  <div class="quiz">
+    ✏️ <b>Checkvraag:</b> een eiland ligt vlak bij een amfidromisch punt. Is het getijverschil daar groot of klein?
+    <input type="text" id="amphiAns" placeholder="groot / klein">
+    <button class="btn secondary" id="amphiCheck">Check</button><span class="fb" id="amphiFb"></span>
+  </div>
+</section>
+
+<!-- ======================= MIXER ======================= -->
+<section class="card">
+  <h2>4 · Zelf getijden bouwen: de getijdenmixer</h2>
+  <p class="lead">Getijvoorspellers tellen tientallen trillingen ("harmonische componenten") bij elkaar op. De drie
+     belangrijkste heb je hier als schuif: <b>M2</b> (maan, elke 12 u 25 min), <b>S2</b> (zon, elke 12 u 00 min) en
+     <b>K1</b> (een ééndaagse component). Schuif en zie wat er met de curve van twee weken gebeurt.</p>
+  <div class="sliders">
+    <label><b>M2 — maansgetij:</b> <span id="m2Val">100</span> cm<br>
+      <input type="range" id="m2" min="0" max="200" value="100"></label>
+    <label><b>S2 — zonsgetij:</b> <span id="s2Val">40</span> cm<br>
+      <input type="range" id="s2" min="0" max="100" value="40"></label>
+    <label><b>K1 — dagcomponent:</b> <span id="k1Val">10</span> cm<br>
+      <input type="range" id="k1" min="0" max="120" value="10"></label>
+  </div>
+  <figure class="chart">
+    <svg id="mixSvg" viewBox="0 0 900 230" preserveAspectRatio="xMidYMid meet" aria-label="Grafiek van de gecombineerde getijcomponenten"></svg>
+    <figcaption>Twee weken gesimuleerde waterstand uit jouw mix van componenten.</figcaption>
+  </figure>
+  <div class="mix-stats" id="mixStats"></div>
+  <div class="quiz">
+    ✏️ <b>Proefje 1:</b> zet S2 en K1 op nul, alleen M2 aan. Hoe vaak per etmaal is het dan hoogwater?
+    <input type="text" id="q1Ans" inputmode="numeric" placeholder="aantal">
+    <button class="btn secondary" id="q1Check">Check</button><span class="fb" id="q1Fb"></span>
+  </div>
+  <div class="quiz">
+    ✏️ <b>Proefje 2:</b> zet M2 én S2 aan. Je ziet het getij "ademen": afwisselend springtij (groot) en doodtij
+    (klein). Na ongeveer hoeveel <b>dagen</b> herhaalt dat patroon zich?
+    <input type="text" id="q2Ans" inputmode="decimal" placeholder="dagen">
+    <button class="btn secondary" id="q2Check">Check</button><span class="fb" id="q2Fb"></span>
+    <div id="q2Hint" style="display:none;margin-top:.4rem;font-size:.85rem;color:var(--text-2)">
+      Hint: M2 en S2 lopen langzaam uit de pas en komen elke ± 14,8 dagen weer samen — dat is de
+      springtij/doodtij-cyclus (halve "maanmaand").</div>
+  </div>
+</section>
+
+<!-- ======================= DUEL ======================= -->
+<section class="card">
+  <h2>5 · Het duel: Middellandse Zee vs. Golf van Biskaje</h2>
+  <p class="lead">Genoeg theorie — meten is weten. Laad de échte berekende waterstanden van Nice en van de Baskische
+     kust en vergelijk het getijverschil.</p>
+  <button class="btn" id="duelBtn">Laad het duel ⚔️</button>
+  <div id="duelWrap" style="display:none">
+    <div class="duel">
+      <div class="dc"><h4>Golf van Biskaje — Saint-Jean-de-Luz</h4>
+        <div class="big" id="duelB">—</div><div class="note">gemiddeld getijverschil (komende dagen)</div></div>
+      <div class="dc"><h4>Middellandse Zee — Nice</h4>
+        <div class="big" id="duelN">—</div><div class="note">gemiddeld getijverschil (komende dagen)</div></div>
+    </div>
+    <div class="quiz" id="duelQuiz">
+      ✏️ <b>Rekenvraag:</b> hoeveel keer zo groot is het getijverschil in Biskaje vergeleken met Nice?
+      (Deel de twee getallen hierboven op elkaar.)
+      <input type="text" id="q3Ans" inputmode="decimal" placeholder="× keer">
+      <button class="btn secondary" id="q3Check">Check</button><span class="fb" id="q3Fb"></span>
+    </div>
+  </div>
+  <div id="duelStatus" style="font-size:.9rem;color:var(--text-2);margin-top:.5rem"></div>
+</section>
+
+<section class="card">
+  <h2>Over de data</h2>
+  <p class="lead" style="margin-bottom:.4rem">De waterstanden komen live van de gratis
+    <a href="https://open-meteo.com/en/docs/marine-weather-api">Open-Meteo Marine API</a>, die een wereldwijd
+    getijden-/zeespiegelmodel gebruikt (± 8 km resolutie). Let op:</p>
+  <ul style="font-size:.9rem;color:var(--text-2);margin-left:1.3rem">
+    <li>Hoogtes zijn t.o.v. <b>gemiddeld zeeniveau (MSL)</b>, niet t.o.v. LAT zoals op zeekaarten — niet gebruiken
+        voor navigatie.</li>
+    <li>In smalle baaien, riviermondingen en havens kan het model er flink naast zitten; ver op zee en langs open
+        kust is het goed bruikbaar.</li>
+    <li>Ligt je pin op land, dan pakt de app automatisch het dichtstbijzijnde zee-gridpunt.</li>
+  </ul>
+  <p class="src">Meer lezen: <a href="https://nl.wikipedia.org/wiki/Amfidromisch_punt">amfidromisch punt</a> ·
+    <a href="https://en.wikipedia.org/wiki/Theory_of_tides">theory of tides</a> ·
+    <a href="https://www.getij.nl">getij.nl (Rijkswaterstaat, NL-kust)</a></p>
+</section>
+
+</div>
+
+<footer>
+  <p>Eb &amp; Vloed Verkenner</p>
+  <p style="margin-top:.6rem">
+    Gemaakt door <strong>Ralph Wagter</strong> met <a href="https://claude.ai/code">Claude Code</a>.
+    Vrij hergebruik onder <a href="https://eupl.eu/">EUPL-1.2</a>.
+    <a href="https://github.com/rwrw01/tides">GitHub</a>
+  </p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+"use strict";
+/* ============================== hulpjes ============================== */
+const $ = id => document.getElementById(id);
+const fmt1 = x => (Math.round(x*10)/10).toLocaleString('nl-NL',{minimumFractionDigits:1,maximumFractionDigits:1});
+const fmt2 = x => (Math.round(x*100)/100).toLocaleString('nl-NL',{minimumFractionDigits:2,maximumFractionDigits:2});
+const parseNum = s => { const v = parseFloat(String(s).trim().replace(',','.')); return isNaN(v)?null:v; };
+function feedback(el, ok, okMsg, nokMsg){ el.textContent = ok?okMsg:nokMsg; el.className = 'fb ' + (ok?'ok':'nok'); }
+
+const DAY_NAMES = ['zo','ma','di','wo','do','vr','za'];
+
+/* ============================== presets ============================== */
+const PRESETS = [
+  {name:'Scheveningen (Noordzee)', lat:52.115, lon:4.24},
+  {name:'Saint-Malo (Kanaal)', lat:48.665, lon:-2.03},
+  {name:'Golf van Biskaje (St-Jean-de-Luz)', lat:43.42, lon:-1.70},
+  {name:'Nice (Middellandse Zee)', lat:43.66, lon:7.25},
+  {name:'Venetië (Adriatische Zee)', lat:45.32, lon:12.51},
+  {name:'Bay of Fundy (Canada)', lat:45.05, lon:-65.40},
+];
+const DUEL = { biskaje: PRESETS[2], nice: PRESETS[3] };
+
+/* ============================== kaart ============================== */
+let map = null, marker = null;
+function initMap(){
+  if (typeof L === 'undefined'){ $('mapFallback').style.display='block'; $('map').style.display='none'; return; }
+  map = L.map('map', {worldCopyJump:true}).setView([46.5, 2.0], 4);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 12, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  }).addTo(map);
+  map.on('click', e => selectLocation(e.latlng.lat, e.latlng.lng, null));
+}
+function placeMarker(lat, lon){
+  if (!map) return;
+  if (marker) marker.setLatLng([lat,lon]); else marker = L.marker([lat,lon]).addTo(map);
+}
+
+/* ============================== API ============================== */
+function apiUrl(lat, lon){
+  return 'https://marine-api.open-meteo.com/v1/marine?latitude=' + lat.toFixed(4) +
+    '&longitude=' + lon.toFixed(4) +
+    '&hourly=sea_level_height_msl&past_days=1&forecast_days=3&timezone=auto&cell_selection=sea';
+}
+async function fetchSeries(lat, lon){
+  const res = await fetch(apiUrl(lat, lon));
+  if (!res.ok) throw new Error('API-fout (HTTP ' + res.status + ')');
+  const j = await res.json();
+  const times = (j.hourly && j.hourly.time) || [];
+  const raw = (j.hourly && j.hourly.sea_level_height_msl) || [];
+  const t = [], h = [];
+  for (let i=0;i<times.length;i++){
+    if (raw[i] === null || raw[i] === undefined) continue;
+    t.push(Date.parse(times[i] + ':00Z'));       // lokale tijd als pseudo-UTC
+    h.push(raw[i]);
+  }
+  if (h.length < 30) throw new Error('Geen zeespiegeldata voor deze plek — prik dichter bij open zee.');
+  return { t, h, tz: j.timezone_abbreviation || '', utcOffset: (j.utc_offset_seconds||0)*1000 };
+}
+
+/* ============================== analyse ============================== */
+function findExtrema(t, h){
+  const ex = [];
+  for (let i=1;i<h.length-1;i++){
+    const isMax = h[i] >= h[i-1] && h[i] >= h[i+1] && (h[i] > h[i-1] || h[i] > h[i+1]);
+    const isMin = h[i] <= h[i-1] && h[i] <= h[i+1] && (h[i] < h[i-1] || h[i] < h[i+1]);
+    if (!isMax && !isMin) continue;
+    // paraboolinterpolatie voor tijd op de minuut i.p.v. op het uur
+    const denom = h[i-1] - 2*h[i] + h[i+1];
+    let off = 0, hv = h[i];
+    if (Math.abs(denom) > 1e-9){
+      off = 0.5 * (h[i-1] - h[i+1]) / denom;
+      off = Math.max(-0.5, Math.min(0.5, off));
+      hv = h[i] - 0.25 * (h[i-1] - h[i+1]) * off;
+    }
+    const dt = (t[i+1]-t[i-1])/2;
+    ex.push({ time: t[i] + off*dt, h: hv, type: isMax ? 'H' : 'L' });
+  }
+  // vlakke dubbelingen wegfilteren: zelfde type kort na elkaar → hoogste/laagste houden
+  const out = [];
+  for (const e of ex){
+    const last = out[out.length-1];
+    if (last && last.type === e.type && e.time - last.time < 4*3600e3){
+      if ((e.type==='H' && e.h>last.h) || (e.type==='L' && e.h<last.h)) out[out.length-1] = e;
+    } else out.push(e);
+  }
+  return out;
+}
+function analyse(t, h){
+  const ex = findExtrema(t, h);
+  const ranges = [];
+  for (let i=1;i<ex.length;i++) if (ex[i].type !== ex[i-1].type) ranges.push(Math.abs(ex[i].h - ex[i-1].h));
+  const meanRange = ranges.length ? ranges.reduce((a,b)=>a+b,0)/ranges.length : 0;
+  const maxRange = ranges.length ? Math.max(...ranges) : 0;
+  const days = (t[t.length-1]-t[0])/86400e3;
+  const highsPerDay = ex.filter(e=>e.type==='H').length / Math.max(days,0.5);
+  let regime, regimeSub;
+  if (meanRange < 0.05){ regime = 'vrijwel getijloos'; regimeSub = 'schommeling < 5 cm'; }
+  else if (highsPerDay >= 1.7){ regime = 'halfdaags'; regimeSub = '≈ 2× per dag hoogwater (om de 12 u 25 min)'; }
+  else if (highsPerDay <= 1.25){ regime = 'enkeldaags'; regimeSub = '≈ 1× per dag hoogwater'; }
+  else { regime = 'gemengd'; regimeSub = 'afwisselend 1 à 2× per dag hoogwater'; }
+  let cls, clsTxt;
+  if (meanRange < 0.3){ cls='none'; clsTxt='minigetij (< 0,3 m)'; }
+  else if (meanRange < 2){ cls='micro'; clsTxt='microtidaal (< 2 m)'; }
+  else if (meanRange < 4){ cls='meso'; clsTxt='mesotidaal (2–4 m)'; }
+  else { cls='macro'; clsTxt='macrotidaal (> 4 m)'; }
+  return { ex, meanRange, maxRange, regime, regimeSub, cls, clsTxt };
+}
+
+/* ============================== grafiek ============================== */
+function drawChart(svg, t, h, ex, nowLocal){
+  const W=900, H=280, padL=46, padR=14, padT=30, padB=30;
+  const x0=t[0], x1=t[t.length-1];
+  let hmin=Math.min(...h), hmax=Math.max(...h);
+  const span = Math.max(hmax-hmin, 0.2), mid=(hmax+hmin)/2;
+  hmin = mid - span/2 - span*0.18; hmax = mid + span/2 + span*0.18;
+  const X = v => padL + (v-x0)/(x1-x0)*(W-padL-padR);
+  const Y = v => padT + (hmax-v)/(hmax-hmin)*(H-padT-padB);
+  let g = '<defs><linearGradient id="fillg" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0" stop-color="#2fa3d6" stop-opacity=".45"/><stop offset="1" stop-color="#2fa3d6" stop-opacity=".05"/></linearGradient></defs>';
+  // y-as
+  const step = span>4 ? 2 : span>1.6 ? 1 : span>0.8 ? 0.5 : span>0.3 ? 0.2 : 0.1;
+  for (let v=Math.ceil(hmin/step)*step; v<=hmax; v+=step){
+    g += `<line x1="${padL}" y1="${Y(v)}" x2="${W-padR}" y2="${Y(v)}" stroke="#e3edf4"/>` +
+         `<text x="${padL-6}" y="${Y(v)+3.5}" text-anchor="end" font-size="11" fill="#5b7280">${fmt1(v)}</text>`;
+  }
+  g += `<text x="14" y="${padT-12}" font-size="11" fill="#5b7280">m t.o.v. MSL</text>`;
+  // dag-grenzen (middernacht lokale tijd)
+  const d0 = new Date(x0); d0.setUTCHours(0,0,0,0);
+  for (let d=d0.getTime(); d<=x1; d+=86400e3){
+    if (d < x0) continue;
+    const dd = new Date(d);
+    g += `<line x1="${X(d)}" y1="${padT}" x2="${X(d)}" y2="${H-padB}" stroke="#dbe6ee" stroke-dasharray="3 4"/>` +
+         `<text x="${X(d)+4}" y="${H-padB+16}" font-size="11" fill="#5b7280">${DAY_NAMES[dd.getUTCDay()]} ${dd.getUTCDate()}/${dd.getUTCMonth()+1}</text>`;
+  }
+  // curve
+  let line='', area='';
+  for (let i=0;i<t.length;i++){
+    line += (i? 'L':'M') + X(t[i]).toFixed(1) + ' ' + Y(h[i]).toFixed(1) + ' ';
+  }
+  area = line + `L ${X(t[t.length-1]).toFixed(1)} ${H-padB} L ${X(t[0]).toFixed(1)} ${H-padB} Z`;
+  g += `<path d="${area}" fill="url(#fillg)"/><path d="${line}" fill="none" stroke="#1276b0" stroke-width="2.2"/>`;
+  // extrema-markers
+  for (const e of ex){
+    const x=X(e.time), y=Y(e.h);
+    const dd = new Date(e.time);
+    const tl = String(dd.getUTCHours()).padStart(2,'0') + ':' + String(dd.getUTCMinutes()).padStart(2,'0');
+    if (e.type==='H'){
+      g += `<path d="M${x} ${y-14} l5 8 h-10 Z" fill="#0b3d5c"/>` +
+           `<text x="${x}" y="${y-18}" text-anchor="middle" font-size="10.5" fill="#0b3d5c" font-weight="600">${tl}</text>`;
+    } else {
+      g += `<path d="M${x} ${y+14} l5 -8 h-10 Z" fill="#e8590c"/>` +
+           `<text x="${x}" y="${y+26}" text-anchor="middle" font-size="10.5" fill="#e8590c" font-weight="600">${tl}</text>`;
+    }
+  }
+  // nu-lijn
+  if (nowLocal >= x0 && nowLocal <= x1){
+    g += `<line x1="${X(nowLocal)}" y1="${padT-4}" x2="${X(nowLocal)}" y2="${H-padB}" stroke="#c92a2a" stroke-width="1.6"/>` +
+         `<text x="${X(nowLocal)}" y="${padT-8}" text-anchor="middle" font-size="11" fill="#c92a2a" font-weight="700">nu</text>`;
+  }
+  svg.innerHTML = g;
+}
+
+/* ============================== hoofdflow ============================== */
+let current = null;   // {analysis, nowLocal}
+async function selectLocation(lat, lon, name){
+  lat = Math.round(lat*1e4)/1e4; lon = Math.round(lon*1e4)/1e4;
+  placeMarker(lat, lon);
+  $('latIn').value = lat; $('lonIn').value = lon;
+  const label = name || (Math.abs(lat).toFixed(2)+'°'+(lat>=0?'N':'Z')+', '+Math.abs(lon).toFixed(2)+'°'+(lon>=0?'O':'W'));
+  const st = $('status'); st.className=''; st.textContent = 'Waterstanden ophalen voor ' + label + '…';
+  try {
+    const s = await fetchSeries(lat, lon);
+    const a = analyse(s.t, s.h);
+    const nowLocal = Date.now() + s.utcOffset;
+    current = { a, nowLocal };
+    st.textContent = 'Klaar! Scroll naar beneden voor het resultaat.';
+    renderResult(label, s, a, nowLocal);
+  } catch(err){
+    st.className='err';
+    st.textContent = '⚠️ ' + (err && err.message ? err.message : 'Kon geen data ophalen. Controleer je internetverbinding.');
+    $('resultCard').style.display='none';
+  }
+}
+function renderResult(label, s, a, nowLocal){
+  $('resultCard').style.display='block';
+  $('locLabel').textContent = label;
+  $('tzLabel').textContent = s.tz || 'lokale tijd';
+  $('classBadge').innerHTML = `<span class="badge ${a.cls}">${a.clsTxt}</span>`;
+  const fut = a.ex.filter(e => e.time > nowLocal);
+  const nh = fut.find(e=>e.type==='H'), nl = fut.find(e=>e.type==='L');
+  const fmtT = ms => { const d=new Date(ms); return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0'); };
+  const fmtIn = ms => { const m=Math.round((ms-nowLocal)/60000); return 'over ' + (m>=60? Math.floor(m/60)+' u '+String(m%60).padStart(2,'0')+' min' : m+' min'); };
+  $('nextHw').textContent = nh ? fmtT(nh.time) : '—';
+  $('nextHwSub').textContent = nh ? fmtIn(nh.time) + ' · ' + fmt2(nh.h) + ' m' : '';
+  $('nextLw').textContent = nl ? fmtT(nl.time) : '—';
+  $('nextLwSub').textContent = nl ? fmtIn(nl.time) + ' · ' + fmt2(nl.h) + ' m' : '';
+  $('rangeVal').textContent = a.meanRange >= 0.5 ? fmt1(a.meanRange) + ' m' : Math.round(a.meanRange*100) + ' cm';
+  $('rangeSub').textContent = 'grootste: ' + fmt2(a.maxRange) + ' m';
+  $('regimeVal').textContent = a.regime;
+  $('regimeSub').textContent = a.regimeSub;
+  drawChart($('tideSvg'), s.t, s.h, a.ex, nowLocal);
+  // aflees-vraag
+  const rq = $('rangeQuiz');
+  if (nh && nl){ rq.style.display='block'; rq.dataset.answer = Math.abs(nh.h - nl.h); $('rangeFb').textContent=''; $('rangeAns').value=''; }
+  else rq.style.display='none';
+  $('resultCard').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* ============================== duel ============================== */
+async function loadDuel(){
+  const st = $('duelStatus'); st.textContent = 'Beide locaties laden…';
+  $('duelBtn').disabled = true;
+  try {
+    const [b, n] = await Promise.all([
+      fetchSeries(DUEL.biskaje.lat, DUEL.biskaje.lon),
+      fetchSeries(DUEL.nice.lat, DUEL.nice.lon),
+    ]);
+    const ab = analyse(b.t, b.h), an = analyse(n.t, n.h);
+    $('duelWrap').style.display='block';
+    $('duelB').textContent = fmt2(ab.meanRange) + ' m';
+    $('duelN').textContent = an.meanRange >= 0.5 ? fmt2(an.meanRange)+' m' : Math.round(an.meanRange*100) + ' cm';
+    const ratio = an.meanRange > 0.01 ? ab.meanRange/an.meanRange : null;
+    $('duelQuiz').dataset.ratio = ratio || '';
+    st.textContent = ratio ? '' : 'Nice heeft zó weinig getij dat de verhouding bijna oneindig is — mooi bewijs op zich!';
+  } catch(err){
+    st.textContent = '⚠️ Laden mislukt: ' + err.message;
+  } finally { $('duelBtn').disabled = false; }
+}
+
+/* ============================== mixer ============================== */
+const T_M2 = 12.4206012, T_S2 = 12.0, T_K1 = 23.9344697; // uren
+function drawMix(){
+  const aM2 = +$('m2').value/100, aS2 = +$('s2').value/100, aK1 = +$('k1').value/100;
+  $('m2Val').textContent = $('m2').value; $('s2Val').textContent = $('s2').value; $('k1Val').textContent = $('k1').value;
+  const days=15, dt=0.25, n=Math.round(days*24/dt);
+  const hs=[]; let hmax=0;
+  for (let i=0;i<=n;i++){
+    const t=i*dt;
+    const v = aM2*Math.cos(2*Math.PI*t/T_M2) + aS2*Math.cos(2*Math.PI*t/T_S2) + aK1*Math.cos(2*Math.PI*t/T_K1);
+    hs.push(v); hmax=Math.max(hmax,Math.abs(v));
+  }
+  hmax = Math.max(hmax, 0.15);
+  const W=900,H=230,padL=40,padR=10,padT=14,padB=24;
+  const X=i=>padL+i/n*(W-padL-padR), Y=v=>padT+(hmax-v)/(2*hmax)*(H-padT-padB);
+  let g = `<line x1="${padL}" y1="${Y(0)}" x2="${W-padR}" y2="${Y(0)}" stroke="#c9d8e4"/>`;
+  for (let d=0; d<=days; d+=2){
+    const x=X(d*24/dt);
+    g += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${H-padB}" stroke="#eaf1f7"/>` +
+         `<text x="${x}" y="${H-6}" font-size="10.5" fill="#5b7280" text-anchor="middle">dag ${d}</text>`;
+  }
+  let line='';
+  for (let i=0;i<=n;i++) line += (i?'L':'M')+X(i).toFixed(1)+' '+Y(hs[i]).toFixed(1)+' ';
+  g += `<path d="${line}" fill="none" stroke="#1276b0" stroke-width="1.6"/>` +
+       `<text x="${padL-30}" y="${Y(hmax)+10}" font-size="10.5" fill="#5b7280">+${fmt1(hmax)} m</text>` +
+       `<text x="${padL-30}" y="${Y(-hmax)}" font-size="10.5" fill="#5b7280">−${fmt1(hmax)} m</text>`;
+  $('mixSvg').innerHTML = g;
+  // dagelijkse spreiding → spring/doodtij
+  const perDay = 24/dt; let sMax=0, sMin=Infinity;
+  for (let d=0; d<days; d++){
+    const seg = hs.slice(d*perDay, (d+1)*perDay+1);
+    const r = Math.max(...seg)-Math.min(...seg);
+    sMax=Math.max(sMax,r); sMin=Math.min(sMin,r);
+  }
+  $('mixStats').innerHTML = (aM2+aS2+aK1) < 0.01 ? 'Alle schuiven op nul — spiegelglad water 🙂' :
+    `Grootste verschil binnen één dag (<b>springtij</b>): <b>${fmt2(sMax)} m</b> · ` +
+    `kleinste (<b>doodtij</b>): <b>${fmt2(sMin)} m</b>` +
+    (aS2>0.01 && aM2>0.01 ? ' — zie je de golving over ± 15 dagen?' : '');
+}
+
+/* ============================== events ============================== */
+initMap();
+for (const p of PRESETS){
+  const b = document.createElement('button');
+  b.textContent = p.name;
+  b.addEventListener('click', () => {
+    if (map) map.setView([p.lat,p.lon], 7);
+    selectLocation(p.lat, p.lon, p.name);
+  });
+  $('presets').appendChild(b);
+}
+$('goBtn').addEventListener('click', () => {
+  const la = parseNum($('latIn').value), lo = parseNum($('lonIn').value);
+  if (la===null || lo===null || Math.abs(la)>90 || Math.abs(lo)>180){
+    const st=$('status'); st.className='err'; st.textContent='⚠️ Vul een geldige breedte- en lengtegraad in.'; return;
+  }
+  if (map) map.setView([la,lo], 6);
+  selectLocation(la, lo, null);
+});
+$('stepBtn').addEventListener('click', () => {
+  const steps = document.querySelectorAll('#steps .step');
+  for (const s of steps){ if (!s.classList.contains('shown')){ s.classList.add('shown'); if (s===steps[steps.length-1]) $('stepBtn').style.display='none'; return; } }
+});
+$('amphiCheck').addEventListener('click', () => {
+  const v = $('amphiAns').value.trim().toLowerCase();
+  feedback($('amphiFb'), /klein|weinig|laag|bijna nul|nul/.test(v), '✔ Precies — vlak bij het punt is er bijna geen verschil.', '✘ Denk aan het stille middelpunt…');
+});
+$('rangeCheck').addEventListener('click', () => {
+  const v = parseNum($('rangeAns').value), ans = parseFloat($('rangeQuiz').dataset.answer);
+  if (v===null){ feedback($('rangeFb'), false, '', 'Vul eerst een getal in.'); return; }
+  const tol = Math.max(0.2, ans*0.2);
+  feedback($('rangeFb'), Math.abs(v-ans)<=tol, `✔ Klopt! Het is ${fmt2(ans)} m.`, `✘ Kijk nog eens: het verschil is ${fmt2(ans)} m.`);
+});
+$('q1Check').addEventListener('click', () => {
+  const v = $('q1Ans').value.trim().toLowerCase();
+  feedback($('q1Fb'), v==='2'||v==='twee'||v==='2x'||v==='2 keer', '✔ Ja: M2 heeft een periode van 12 u 25 min, dus ~2× per etmaal hoogwater.', '✘ Tel de toppen in één dag op de grafiek…');
+});
+$('q2Check').addEventListener('click', () => {
+  const v = parseNum($('q2Ans').value);
+  const ok = v!==null && v>=13 && v<=16.5;
+  feedback($('q2Fb'), ok, '✔ Goed: ± 14,8 dagen — de springtij/doodtij-cyclus.', '✘ Kijk hoeveel dagen er tussen twee "buiken" zitten.');
+  $('q2Hint').style.display='block';
+});
+$('q3Check').addEventListener('click', () => {
+  const v = parseNum($('q3Ans').value), r = parseFloat($('duelQuiz').dataset.ratio);
+  if (!r){ feedback($('q3Fb'), false, '', 'Laad eerst het duel.'); return; }
+  if (v===null){ feedback($('q3Fb'), false, '', 'Vul eerst een getal in.'); return; }
+  feedback($('q3Fb'), Math.abs(v-r) <= r*0.25, `✔ Goed gerekend: ± ${fmt1(r)}× zo groot!`, `✘ Deel Biskaje door Nice; het antwoord is ± ${fmt1(r)}×.`);
+});
+$('duelBtn').addEventListener('click', loadDuel);
+for (const id of ['m2','s2','k1']) $(id).addEventListener('input', drawMix);
+drawMix();
+</script>
+</body>
+</html>
