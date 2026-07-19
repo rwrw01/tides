@@ -83,6 +83,27 @@ test.describe('Getijden-app (UI; tegels/radar/atlas live, Open-Meteo gestubd)', 
       null, { timeout: 25_000 });
   });
 
+  test('ver uitzoomen kan de kaart niet laten verdwalen', async ({ page }) => {
+    // reproduceert de veldbug: ver uitpinchen richting open oceaan
+    await page.evaluate(() => window._map.setView([0, -60], 1));
+    await page.waitForTimeout(400);
+    const st = await page.evaluate(() => ({ z: window._map.getZoom(), c: window._map.getCenter() }));
+    expect(st.z).toBeGreaterThanOrEqual(4);          // minZoom geklemd
+    expect(st.c.lat).toBeGreaterThan(20);            // teruggeduwd binnen Europa-grenzen
+    expect(st.c.lng).toBeGreaterThan(-36);
+    await page.evaluate(() => window._map.setZoom(6)); // kaart blijft bedienbaar
+    expect(await page.evaluate(() => window._map.getZoom())).toBe(6);
+  });
+
+  test('locatieknop werkt, ook na ver uitzoomen', async ({ page, context }) => {
+    await context.grantPermissions(['geolocation']);
+    await context.setGeolocation({ latitude: 52.37, longitude: 4.90 });
+    await page.evaluate(() => window._map.setView([0, -60], 1)); // eerst 'verdwalen'
+    await page.click('#locBtn');
+    await expect(page.locator('#locName')).toHaveText(/52\.37°N/, { timeout: 15_000 });
+    expect(await page.evaluate(() => window._map.getZoom())).toBe(9);
+  });
+
   test('sheet klapt in en uit via de grabber', async ({ page }) => {
     await page.click('#grab');
     await expect(page.locator('#sheet')).toHaveClass(/collapsed/);
