@@ -27,7 +27,7 @@
 html,body{height:100%;overscroll-behavior:none}
 body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;
      background:var(--bg);color:var(--text);touch-action:manipulation;overflow:hidden}
-#map{position:fixed;inset:0;z-index:0;background:#b5d3e7}
+#map{position:fixed;inset:0;z-index:0;background:#b5d3e7;touch-action:none}
 #mapErr{display:none;position:fixed;inset:0;z-index:0;align-items:center;justify-content:center;
         text-align:center;color:var(--text-2);padding:2rem;font-size:.95rem}
 .ctl{position:fixed;right:calc(12px + env(safe-area-inset-right));z-index:20;width:44px;height:44px;
@@ -133,8 +133,13 @@ const TILE_SAT   = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_I
 const darkMq = matchMedia('(prefers-color-scheme: dark)');
 let map = null, marker = null, base = null, satOn = false;
 const baseUrl = () => satOn ? TILE_SAT : (darkMq.matches ? TILE_DARK : TILE_LIGHT);
+// iOS Safari: voorkom dat een pinch de hele pagina zoomt i.p.v. de kaart
+for (const ev of ['gesturestart','gesturechange','gestureend'])
+  document.addEventListener(ev, e => e.preventDefault());
 if (typeof L !== 'undefined'){
-  map = L.map('map', {zoomControl:false, worldCopyJump:true}).setView([52.1, 4.3], 6);
+  map = L.map('map', {zoomControl:false, worldCopyJump:true, minZoom:3,
+    maxBounds:[[-85,-180],[85,180]], maxBoundsViscosity:0.8, bounceAtZoomLimits:false
+  }).setView([52.1, 4.3], 6);
   base = L.tileLayer(baseUrl(), {maxZoom:17,
     attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; CARTO &middot; beeld Esri'}).addTo(map);
   darkMq.addEventListener('change', () => { if (!satOn) base.setUrl(baseUrl()); });
