@@ -91,6 +91,33 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
 .sw::after{content:'';position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
 .sw.on{background:#34c759}.sw.on::after{left:20px}
 .cfg-done{margin-top:.9rem;width:100%;padding:.6rem;border:0;border-radius:10px;background:var(--blue);color:#fff;font-size:.95rem;font-weight:600;cursor:pointer}
+.wx-now{display:flex;align-items:center;gap:.7rem;margin-top:6px}
+.wx-now .t{font-size:2.1rem;font-weight:700;letter-spacing:-.03em}
+.wx-now .ic{font-size:1.8rem}
+.wx-now .d{font-size:.78rem;color:var(--text-2);line-height:1.4}
+#wxChart{width:100%;height:88px;display:block;margin-top:8px}
+.wx-days{margin-top:4px}
+.wx-row{display:flex;align-items:center;gap:.45rem;padding:.3rem 0;border-bottom:1px solid var(--sep);font-size:.85rem}
+.wx-row:last-child{border-bottom:0}
+.wx-row .dy{width:2.4rem;color:var(--text-2)}
+.wx-row .ic{width:1.5rem;text-align:center}
+.wx-row .pr{width:3.9rem;color:var(--blue);font-size:.74rem}
+.wx-row .tmin{color:var(--text-2);width:2.2rem;text-align:right;font-variant-numeric:tabular-nums}
+.wx-row .tmax{width:2.2rem;text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.wx-row .bar{flex:1;height:4px;border-radius:2px;background:var(--tile);position:relative}
+.wx-row .bar i{position:absolute;top:0;bottom:0;border-radius:2px;background:linear-gradient(90deg,#5ac8fa,#ff9500)}
+.wx-src{display:flex;align-items:center;gap:.5rem;margin-top:8px;font-size:.74rem;color:var(--text-2)}
+.wx-src select{font:inherit;color:var(--blue);border:0;background:var(--tile);border-radius:6px;padding:.25rem .4rem;max-width:13rem}
+.nx-row{display:flex;align-items:center;gap:.55rem;padding:.3rem 0;border-bottom:1px solid var(--sep);font-size:.85rem}
+.nx-row:last-child{border-bottom:0}
+.nx-row .dy{width:2.4rem;color:var(--text-2)}
+.nx-row .det{flex:1;color:var(--text-2);font-size:.78rem}
+.score{min-width:2.2rem;text-align:center;font-weight:700;border-radius:6px;padding:.05rem .3rem;font-size:.82rem}
+.s-goed{background:rgba(52,199,89,.18);color:#248a3d}
+.s-matig{background:rgba(255,204,0,.22);color:#9a7d0a}
+.s-slecht{background:rgba(255,59,48,.15);color:var(--red)}
+@media (prefers-color-scheme: dark){ .s-goed{color:#30d158} .s-matig{color:#ffd60a} }
+.nx-note{font-size:.7rem;color:var(--text-2);margin-top:8px;line-height:1.45}
 .colofon{margin-top:10px;padding-top:8px;border-top:1px solid var(--sep);
          font-size:.66rem;color:var(--text-2);text-align:center}
 .colofon a{color:var(--text-2)}
@@ -154,6 +181,40 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
           <div class="tile"><div class="k">Maan onder</div><div class="v" id="moonset">–</div><div class="s"></div></div>
         </div>
         <div class="twilight" id="twilight"></div>
+      </div>
+    </section>
+    <section class="panel" data-panel="weer">
+      <div class="ptitle">Weer</div>
+      <div class="hint" id="wxHint">Tik op de kaart om een pin te zetten</div>
+      <div id="wx" style="display:none">
+        <div class="wx-now">
+          <span class="t" id="wxTemp">–</span><span class="ic" id="wxIcon"></span>
+          <span class="d" id="wxDesc"></span>
+        </div>
+        <div class="tiles" style="margin-top:8px">
+          <div class="tile"><div class="k">Neerslag</div><div class="v" id="wxRain" style="font-size:1.05rem">–</div><div class="s" id="wxRainS"></div></div>
+          <div class="tile"><div class="k">Wind</div><div class="v" id="wxWind" style="font-size:1.05rem">–</div><div class="s" id="wxWindS"></div></div>
+          <div class="tile"><div class="k">Dauwpunt</div><div class="v" id="wxDew" style="font-size:1.05rem">–</div><div class="s" id="wxDewS"></div></div>
+        </div>
+        <svg id="wxChart" viewBox="0 0 360 88" preserveAspectRatio="none" aria-label="Temperatuur en neerslag komende 24 uur"></svg>
+        <div class="wx-days" id="wxDays"></div>
+        <div class="wx-src">Model:
+          <select id="wxModel" aria-label="Weermodel kiezen"></select>
+        </div>
+      </div>
+    </section>
+    <section class="panel" data-panel="nacht">
+      <div class="ptitle">Nachthemel</div>
+      <div class="hint" id="nxHint">Tik op de kaart om een pin te zetten</div>
+      <div id="nx" style="display:none">
+        <div class="tiles">
+          <div class="tile"><div class="k">Bortle</div><div class="v" id="nxBortle" style="font-size:1.05rem">…</div><div class="s" id="nxBortleS"></div></div>
+          <div class="tile hw"><div class="k">Vannacht</div><div class="v" id="nxTonight">–</div><div class="s" id="nxTonightS"></div></div>
+          <div class="tile"><div class="k">Donker</div><div class="v" id="nxDark" style="font-size:.98rem">–</div><div class="s" id="nxDarkS"></div></div>
+        </div>
+        <div id="nxNights" style="margin-top:6px"></div>
+        <div class="nx-note">Sterrenkijk-index 0–10 per nacht: bewolking tijdens het donkere venster × maanstoring
+          (verlichting en of de maan op is). Bortle 1 = perfect donker, 9 = binnenstad.</div>
       </div>
     </section>
   </div>
@@ -301,8 +362,11 @@ function findExtrema(t, h){
 }
 
 /* -------- UI -------- */
+let lastPin = null;
 function selectLocation(lat, lon){
   lat = Math.round(lat*1e4)/1e4; lon = Math.round(lon*1e4)/1e4;
+  lastPin = { lat, lon };
+  loadWeather(lat, lon);
   if (map){ if (marker) marker.setLatLng([lat,lon]); else marker = L.marker([lat,lon]).addTo(map); }
   $('locName').textContent = Math.abs(lat).toFixed(2)+'°'+(lat>=0?'N':'Z')+' '+Math.abs(lon).toFixed(2)+'°'+(lon>=0?'O':'W');
   const hint = $('hint'); hint.className='hint'; hint.style.display='block'; hint.textContent='Laden…';
@@ -481,8 +545,166 @@ function renderAstro(lat, lon, offset){
     ' · nautisch tot ' + f(T.nauticalDusk) + ' · astronomisch tot ' + f(T.astroDusk);
 }
 
+/* -------- weer (Open-Meteo forecast, expliciete modelkeuze) -------- */
+const WX_MODELS = [
+  { id:'best_match',           naam:'Automatisch (beste match)' },
+  { id:'knmi_seamless',        naam:'KNMI Harmonie · 2–5,5 km' },
+  { id:'icon_seamless',        naam:'DWD ICON · 2–11 km' },
+  { id:'ecmwf_ifs025',         naam:'ECMWF IFS · 25 km' },
+  { id:'meteofrance_seamless', naam:'Météo-France · 1,5–25 km' },
+  { id:'gfs_seamless',         naam:'NOAA GFS · 25 km' },
+];
+let wxModel = 'best_match';
+try { const m = localStorage.getItem('wxmodel'); if (WX_MODELS.some(x => x.id === m)) wxModel = m; } catch(e){}
+const WMO = c => ({0:['☀️','onbewolkt'],1:['🌤️','vrijwel onbewolkt'],2:['⛅','half bewolkt'],3:['☁️','bewolkt'],
+  45:['🌫️','mist'],48:['🌫️','aanvriezende mist'],51:['🌦️','lichte motregen'],53:['🌦️','motregen'],55:['🌧️','dichte motregen'],
+  56:['🌧️','ijzel'],57:['🌧️','ijzel'],61:['🌦️','lichte regen'],63:['🌧️','regen'],65:['🌧️','zware regen'],66:['🌧️','ijzel'],
+  67:['🌧️','ijzel'],71:['🌨️','lichte sneeuw'],73:['🌨️','sneeuw'],75:['❄️','zware sneeuw'],77:['🌨️','motsneeuw'],
+  80:['🌦️','buien'],81:['🌧️','buien'],82:['⛈️','zware buien'],85:['🌨️','sneeuwbuien'],86:['🌨️','sneeuwbuien'],
+  95:['⛈️','onweer'],96:['⛈️','onweer met hagel'],99:['⛈️','zwaar onweer']}[c] || ['·','—']);
+const WINDDIR = d => ['N','NO','O','ZO','Z','ZW','W','NW'][Math.round(d/45) % 8];
+async function fetchWeather(lat, lon){
+  let url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat.toFixed(4) + '&longitude=' + lon.toFixed(4) +
+    '&current=temperature_2m,apparent_temperature,dew_point_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m' +
+    '&hourly=temperature_2m,precipitation,cloud_cover' +
+    '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max' +
+    '&forecast_days=7&timezone=auto&wind_speed_unit=kmh';
+  if (wxModel !== 'best_match') url += '&models=' + wxModel;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Weerdata mislukt (HTTP ' + res.status + ')');
+  const j = await res.json();
+  j._offset = (j.utc_offset_seconds || 0) * 1000;
+  return j;
+}
+const DAYS_NL = ['zo','ma','di','wo','do','vr','za'];
+function renderWeer(wx){
+  $('wxHint').style.display = 'none'; $('wx').style.display = 'block';
+  const c = wx.current || {};
+  const [ic, desc] = WMO(c.weather_code);
+  $('wxTemp').textContent = Math.round(c.temperature_2m) + '°';
+  $('wxIcon').textContent = ic;
+  $('wxDesc').innerHTML = desc + '<br>voelt als ' + Math.round(c.apparent_temperature) + '°';
+  $('wxRain').textContent = (c.precipitation || 0) + ' mm';
+  const d = wx.daily || {};
+  $('wxRainS').textContent = 'vandaag ' + ((d.precipitation_sum && d.precipitation_sum[0]) ?? 0) + ' mm';
+  $('wxWind').textContent = Math.round(c.wind_speed_10m) + ' km/u ' + WINDDIR(c.wind_direction_10m);
+  $('wxWindS').textContent = 'stoten ' + Math.round(c.wind_gusts_10m) + ' km/u';
+  $('wxDew').textContent = Math.round(c.dew_point_2m) + '°';
+  $('wxDewS').textContent = c.dew_point_2m >= 16 ? 'drukkend' : c.dew_point_2m >= 12 ? 'ietwat vochtig' : 'fris';
+  // 24-uursgrafiek: temperatuur + neerslag
+  const h = wx.hourly || {}, times = h.time || [];
+  const nowLocal = Date.now() + wx._offset;
+  let i0 = times.findIndex(t => Date.parse(t + ':00Z') >= nowLocal - 3600e3);
+  if (i0 < 0) i0 = 0;
+  const N = Math.min(24, times.length - i0);
+  const temps = h.temperature_2m.slice(i0, i0 + N), rains = h.precipitation.slice(i0, i0 + N);
+  if (N > 3){
+    const W = 360, H = 88, pT = 14, pB = 14;
+    let tmin = Math.min(...temps), tmax = Math.max(...temps);
+    const span = Math.max(tmax - tmin, 2); tmin -= span * .15; tmax += span * .15;
+    const rmax = Math.max(1, ...rains);
+    const X = i => i / (N - 1) * W, Y = v => pT + (tmax - v) / (tmax - tmin) * (H - pT - pB);
+    let g = '';
+    rains.forEach((r, i) => { if (r > 0){
+      const bh = r / rmax * (H - pT - pB) * .8;
+      g += `<rect x="${X(i) - 4}" y="${H - pB - bh}" width="8" height="${bh}" rx="2" fill="rgba(90,200,250,.55)"/>`; } });
+    let line = '';
+    temps.forEach((v, i) => line += (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1) + ' ');
+    g += `<path d="${line}" fill="none" stroke="#ff9500" stroke-width="2"/>`;
+    for (let i = 0; i < N; i += 6){
+      const hh = times[i0 + i].slice(11, 13);
+      g += `<text x="${X(i)}" y="${H - 2}" font-size="9" fill="#8e8e93" text-anchor="middle">${hh}u</text>`;
+    }
+    g += `<text x="4" y="${Y(Math.max(...temps)) - 4}" font-size="9.5" fill="#ff9500" font-weight="600">${Math.round(Math.max(...temps))}°</text>`;
+    $('wxChart').innerHTML = g;
+  } else $('wxChart').innerHTML = '';
+  // 7-daagse rijen
+  const dt = d.time || [];
+  const wmin = Math.min(...(d.temperature_2m_min || [0])), wmax = Math.max(...(d.temperature_2m_max || [1]));
+  $('wxDays').innerHTML = dt.map((day, i) => {
+    const code = d.weather_code ? d.weather_code[i] : null;
+    const mn = d.temperature_2m_min[i], mx = d.temperature_2m_max[i];
+    if (mn === null || mx === null) return '';
+    const dd = new Date(day + 'T12:00Z');
+    const [dic] = WMO(code);
+    const pv = d.precipitation_sum ? d.precipitation_sum[i] : null;
+    const pp = d.precipitation_probability_max ? d.precipitation_probability_max[i] : null;
+    const l = (mn - wmin) / Math.max(wmax - wmin, 1) * 100, r = (mx - wmin) / Math.max(wmax - wmin, 1) * 100;
+    return `<div class="wx-row"><span class="dy">${i === 0 ? 'nu' : DAYS_NL[dd.getUTCDay()] + ' ' + dd.getUTCDate()}</span>` +
+      `<span class="ic">${dic}</span>` +
+      `<span class="pr">${pv > 0 ? pv.toFixed(1) + ' mm' : ''}${pp > 20 && pv > 0 ? ' · ' + pp + '%' : ''}</span>` +
+      `<span class="tmin">${Math.round(mn)}°</span>` +
+      `<span class="bar"><i style="left:${l}%;width:${Math.max(r - l, 3)}%"></i></span>` +
+      `<span class="tmax">${Math.round(mx)}°</span></div>`;
+  }).join('');
+}
+
+/* -------- nachthemel: sterrenkijk-index + Bortle -------- */
+function nightWindow(dayStartMs, lat, lon){
+  // donker venster vannacht: astronomisch, anders nautisch, anders burgerlijk, anders 23-04u.
+  // dageraad = spiegeling van de schemering rond de zonsmiddag van de volgende dag.
+  const T1 = sunTimes(dayStartMs + 12*3600e3, lat, lon);
+  const W2 = sunTimes(dayStartMs + 36*3600e3, lat, lon);
+  const cand = [
+    [T1.astroDusk,    2*W2.noon - W2.astroDusk,    'astronomisch donker'],
+    [T1.nauticalDusk, 2*W2.noon - W2.nauticalDusk, 'nautisch donker'],
+    [T1.civilDusk,    2*W2.noon - W2.civilDusk,    'burgerlijk donker'],
+  ];
+  for (const [du, dawn, lbl] of cand)
+    if (!isNaN(du) && !isNaN(dawn)) return { start: du, end: dawn, label: lbl };
+  return { start: dayStartMs + 23*3600e3, end: dayStartMs + 28*3600e3, label: 'nacht (23–04u)' };
+}
+function nightScore(cloudPct, moonFrac, moonUp){
+  const moonFactor = moonFrac * (moonUp ? 1 : 0.2);
+  return Math.max(0, Math.round(10 * (1 - cloudPct/100) * (1 - 0.6 * moonFactor)));
+}
+const scoreClass = s => s >= 7 ? 's-goed' : s >= 4 ? 's-matig' : 's-slecht';
+const scoreLabel = s => s >= 8 ? 'uitstekend' : s >= 6 ? 'goed' : s >= 4 ? 'matig' : 'slecht';
+function renderNacht(lat, lon, wx){
+  $('nxHint').style.display = 'none'; $('nx').style.display = 'block';
+  const off = wx._offset;
+  const h = wx.hourly || {}, times = (h.time || []).map(t => Date.parse(t + ':00Z')); // pseudo-lokaal
+  const clouds = h.cloud_cover || [];
+  const nowLocal = Date.now() + off;
+  const midnight = Math.floor(nowLocal / DAY) * DAY - off; // absoluut
+  const rows = [];
+  for (let n = 0; n < 7; n++){
+    const w = nightWindow(midnight + n*DAY, lat, lon);
+    const s = w.start + off, e = w.end + off; // naar pseudo-lokaal voor de uurreeks
+    const cs = [];
+    for (let i = 0; i < times.length; i++) if (times[i] >= s && times[i] <= e && clouds[i] !== null) cs.push(clouds[i]);
+    const avgCloud = cs.length ? cs.reduce((a,b) => a+b, 0) / cs.length : null;
+    const mid = (w.start + w.end) / 2;
+    const mi = moonIllumination(mid);
+    const up = moonAltitude(mid, lat, lon) > 0;
+    rows.push({ n, w, avgCloud, moonFrac: mi.fraction, up,
+      score: avgCloud === null ? null : nightScore(avgCloud, mi.fraction, up) });
+  }
+  const t0 = rows[0];
+  $('nxTonight').textContent = t0.score === null ? '—' : t0.score + '/10';
+  $('nxTonightS').textContent = t0.score === null ? 'geen bewolkingsdata' : scoreLabel(t0.score);
+  $('nxDark').textContent = clock(t0.w.start + off) + '–' + clock(t0.w.end + off);
+  $('nxDarkS').textContent = t0.w.label;
+  $('nxNights').innerHTML = rows.map(r => {
+    const dd = new Date(midnight + off + r.n * DAY);
+    const dy = r.n === 0 ? 'nu' : DAYS_NL[dd.getUTCDay()] + ' ' + dd.getUTCDate();
+    const sc = r.score === null ? '<span class="score">–</span>' :
+      `<span class="score ${scoreClass(r.score)}">${r.score}</span>`;
+    const det = (r.avgCloud === null ? 'geen data' : '☁️ ' + Math.round(r.avgCloud) + '%') +
+      ' · 🌙 ' + Math.round(r.moonFrac * 100) + '%' + (r.up ? '' : ' (onder)');
+    return `<div class="nx-row"><span class="dy">${dy}</span>${sc}<span class="det">${det}</span></div>`;
+  }).join('');
+  loadBortle(lat, lon);
+}
+async function loadBortle(lat, lon){
+  // Lichtvervuiling: Lorenz-atlas (VIIRS). Decoder volgt; toon voorlopig n.b. bij falen.
+  $('nxBortle').textContent = 'n.b.';
+  $('nxBortleS').textContent = 'atlas nog niet gekoppeld';
+}
+
 /* -------- panelen: swipe, volgorde en aan/uit -------- */
-const PANEL_DEFS = [ { id:'getij', naam:'Getij' }, { id:'hemel', naam:'Hemel' } ];
+const PANEL_DEFS = [ { id:'getij', naam:'Getij' }, { id:'weer', naam:'Weer' },
+                    { id:'hemel', naam:'Zon & maan' }, { id:'nacht', naam:'Nachthemel' } ];
 let panelCfg = null;
 try { panelCfg = JSON.parse(localStorage.getItem('panelcfg')); } catch(e){}
 if (!panelCfg || !Array.isArray(panelCfg.order) || !Array.isArray(panelCfg.off))
@@ -536,6 +758,28 @@ $('cfgSheet').addEventListener('click', e => {
   applyPanels(); renderCfg();
 });
 applyPanels();
+
+/* -------- weer + nachthemel laden -------- */
+function loadWeather(lat, lon){
+  fetchWeather(lat, lon).then(wx => {
+    renderWeer(wx);
+    renderNacht(lat, lon, wx);
+  }).catch(err => {
+    for (const [hintId, blockId] of [['wxHint','wx'], ['nxHint','nx']]){
+      $(hintId).style.display = 'block';
+      $(hintId).textContent = '⚠️ ' + (err.message || 'Weerdata niet beschikbaar');
+      $(blockId).style.display = 'none';
+    }
+  });
+}
+const sel = $('wxModel');
+sel.innerHTML = WX_MODELS.map(m => `<option value="${m.id}">${m.naam}</option>`).join('');
+sel.value = wxModel;
+sel.addEventListener('change', () => {
+  wxModel = sel.value;
+  try { localStorage.setItem('wxmodel', wxModel); } catch(e){}
+  if (lastPin) loadWeather(lastPin.lat, lastPin.lon);
+});
 
 /* -------- locatieknop + start -------- */
 $('locBtn').addEventListener('click', () => {

@@ -92,6 +92,31 @@ test.describe('Getijden-app (live databronnen)', () => {
     await expect(page.locator('#cfgSheet')).toBeHidden();
   });
 
+  test('weer-paneel: actueel + 7 dagen (live API)', async ({ page }) => {
+    await page.evaluate(() => selectLocation(52.115, 4.24));
+    await expect(page.locator('#wx')).toBeVisible({ timeout: 25_000 });
+    await expect(page.locator('#wxTemp')).toHaveText(/-?\d+°/);
+    await expect(page.locator('#wxDays .wx-row')).toHaveCount(7, { timeout: 15_000 });
+    expect(await page.locator('#wxChart path').count()).toBeGreaterThan(0);
+  });
+
+  test('modelkiezer: ECMWF levert ook data', async ({ page }) => {
+    await page.evaluate(() => selectLocation(52.115, 4.24));
+    await expect(page.locator('#wx')).toBeVisible({ timeout: 25_000 });
+    await page.selectOption('#wxModel', 'ecmwf_ifs025');
+    await expect(page.locator('#wx')).toBeVisible({ timeout: 25_000 });
+    await expect(page.locator('#wxTemp')).toHaveText(/-?\d+°/);
+    await expect(page.locator('#wxHint')).toBeHidden();
+  });
+
+  test('nachthemel: 7 nachten met sterrenkijk-score', async ({ page }) => {
+    await page.evaluate(() => selectLocation(52.115, 4.24));
+    await expect(page.locator('#nx')).toBeVisible({ timeout: 25_000 });
+    await expect(page.locator('#nxNights .nx-row')).toHaveCount(7, { timeout: 15_000 });
+    await expect(page.locator('#nxTonight')).toHaveText(/\d+\/10|—/);
+    await expect(page.locator('#nxDark')).toHaveText(/\d{2}:\d{2}–\d{2}:\d{2}/);
+  });
+
   test('service worker registreert', async ({ page }) => {
     const ok = await page.evaluate(() =>
       navigator.serviceWorker.register('./sw.js').then(r => !!r, () => false));

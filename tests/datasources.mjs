@@ -26,6 +26,26 @@ const checks = [
       const v = (j.hourly?.sea_level_height_msl || []).filter(x => x !== null);
       return 'levert ' + v.length + ' uurwaarden (app toont dan zachte melding)';
     } },
+  { name: 'Open-Meteo weer — Scheveningen (best match)', critical: true, type: 'json',
+    url: 'https://api.open-meteo.com/v1/forecast?latitude=52.115&longitude=4.24&current=temperature_2m&hourly=cloud_cover&daily=temperature_2m_max&forecast_days=7&timezone=auto',
+    validate: j => {
+      const ok = j.current && j.current.temperature_2m !== null &&
+        (j.daily?.temperature_2m_max || []).filter(x => x !== null).length === 7 &&
+        (j.hourly?.cloud_cover || []).filter(x => x !== null).length > 100;
+      return ok ? 'ok: current + 7 dagen + bewolking' : 'te weinig data: ' + JSON.stringify(j).slice(0, 120);
+    } },
+  { name: 'Open-Meteo weer — model ECMWF expliciet', critical: false, type: 'json',
+    url: 'https://api.open-meteo.com/v1/forecast?latitude=52.115&longitude=4.24&current=temperature_2m&daily=temperature_2m_max&forecast_days=7&timezone=auto&models=ecmwf_ifs025',
+    validate: j => {
+      const n = (j.daily?.temperature_2m_max || []).filter(x => x !== null).length;
+      return 'levert ' + n + '/7 dagen';
+    } },
+  { name: 'Open-Meteo weer — model KNMI expliciet', critical: false, type: 'json',
+    url: 'https://api.open-meteo.com/v1/forecast?latitude=52.115&longitude=4.24&current=temperature_2m&daily=temperature_2m_max&forecast_days=7&timezone=auto&models=knmi_seamless',
+    validate: j => {
+      const n = (j.daily?.temperature_2m_max || []).filter(x => x !== null).length;
+      return 'levert ' + n + '/7 dagen (kort bereik is verwacht)';
+    } },
   { name: 'RainViewer weather-maps.json', critical: false, type: 'json',
     url: 'https://api.rainviewer.com/public/weather-maps.json',
     validate: j => {
@@ -101,6 +121,18 @@ if (rainviewerTile) {
   // placeholder-detectie: als z8 exact even groot is als z7 is dat verdacht,
   // maar de echte bewaking is de e2e-test die de URL-zoom clampt.
 }
+
+// Eenmalige probe voor de Bortle-decoder: haal het decodeer-JS van de
+// Lorenz-lichtvervuilingsatlas op (sandbox kan deze host niet bereiken).
+let lorenz = '';
+try {
+  const r = await fetch('https://djlorenz.github.io/astronomy/lp/overlay/dark.html', { signal: AbortSignal.timeout(15000) });
+  const t = await r.text();
+  const i = t.indexOf('binary_tiles');
+  lorenz = i >= 0 ? t.slice(Math.max(0, i - 2200), i + 2800)
+                  : '(geen "binary_tiles" in dark.html; lengte=' + t.length + ')';
+} catch (e) { lorenz = 'probe mislukt: ' + e.message; }
+console.log('\n### Lorenz-atlas probe\n```\n' + lorenz + '\n```\n');
 
 let md = '## Databronnen-smoketest\n\n| Bron | Status | Detail | Kritiek |\n|---|---|---|---|\n';
 for (const r of rows) md += `| ${r.name} | ${r.status} | ${r.detail} | ${r.critical ? 'ja' : 'nee'} |\n`;
