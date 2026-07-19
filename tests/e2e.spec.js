@@ -123,6 +123,13 @@ test.describe('Getijden-app (UI; tegels/radar/atlas live, Open-Meteo gestubd)', 
     await expect(page.locator('#seaExtra')).toBeVisible({ timeout: 25_000 });
     await expect(page.locator('#sstNow')).toHaveText(/\d+,\d°|—/);
     await expect(page.locator('#wvNow')).toHaveText(/\d+,\d m|—/);
+    // golf- en getijgrafiek delen dezelfde tijdas: nu-lijnen op gelijke x
+    const diff = await page.evaluate(() => {
+      const g = document.querySelector('#spark line[stroke="#ff3b30"]');
+      const w = document.querySelector('#wvSpark line[stroke="#ff3b30"]');
+      return g && w ? Math.abs(parseFloat(g.getAttribute('x1')) - parseFloat(w.getAttribute('x1'))) : 999;
+    });
+    expect(diff).toBeLessThan(1);
   });
 
   test('weer-paneel: Dag (per uur) en Week wisselen', async ({ page }) => {

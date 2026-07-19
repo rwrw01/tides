@@ -542,11 +542,15 @@ function render(s){
   }
 }
 function drawMini(svg, t, vals, now){
-  const idx = []; for (let i = 0; i < t.length; i++) if (vals[i] !== null) idx.push(i);
+  // zelfde tijdvenster als de getijgrafiek (-6u .. +30u), zodat beide
+  // grafieken onder elkaar dezelfde tijdas delen
+  const x0 = now - 6*3600e3, x1 = now + 30*3600e3;
+  const idx = [];
+  for (let i = 0; i < t.length; i++)
+    if (vals[i] !== null && t[i] >= x0 - 3600e3 && t[i] <= x1 + 3600e3) idx.push(i);
   if (idx.length < 5){ svg.style.display = 'none'; return; }
   svg.style.display = 'block';
   const W = 360, H = 60, pT = 12, pB = 6;
-  const x0 = t[idx[0]], x1 = t[idx[idx.length-1]];
   const vmax = Math.max(0.5, ...idx.map(i => vals[i])) * 1.15;
   const X = v => (v - x0) / (x1 - x0) * W, Y = v => pT + (1 - v / vmax) * (H - pT - pB);
   let line = '';
