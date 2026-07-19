@@ -4,6 +4,7 @@ module.exports = defineConfig({
   testDir: './tests',
   timeout: 60_000,
   retries: 1,
+  workers: 2, // niet alle tests tegelijk op de echte API's (429-risico)
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: 'http://127.0.0.1:8080',

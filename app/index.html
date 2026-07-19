@@ -389,14 +389,21 @@ $('radarPlay').addEventListener('click', () => {
 });
 
 /* -------- data -------- */
+async function fetchJson(url, tries = 2){
+  for (let a = 0; a < tries; a++){
+    const res = await fetch(url);
+    if (res.ok) return res.json();
+    if (a < tries - 1 && (res.status === 429 || res.status >= 500))
+      await new Promise(r => setTimeout(r, 1500 + Math.random() * 1500));
+    else { const e = new Error('Kon geen data ophalen (HTTP ' + res.status + ')'); e.http = res.status; throw e; }
+  }
+}
 async function fetchSeries(lat, lon){
   const url = 'https://marine-api.open-meteo.com/v1/marine?latitude=' + lat.toFixed(4) +
     '&longitude=' + lon.toFixed(4) +
     '&hourly=sea_level_height_msl,wave_height,sea_surface_temperature' +
     '&past_days=1&forecast_days=2&timezone=auto&cell_selection=sea';
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Kon geen data ophalen (HTTP ' + res.status + ')');
-  const j = await res.json();
+  const j = await fetchJson(url);
   const times = (j.hourly && j.hourly.time) || [], raw = (j.hourly && j.hourly.sea_level_height_msl) || [];
   const wvRaw = (j.hourly && j.hourly.wave_height) || [], stRaw = (j.hourly && j.hourly.sea_surface_temperature) || [];
   const t = [], h = [], wv = [], st = [];
@@ -684,9 +691,7 @@ async function fetchWeather(lat, lon){
     '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max' +
     '&forecast_days=7&timezone=auto&wind_speed_unit=kmh';
   if (wxModel !== 'best_match') url += '&models=' + wxModel;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Weerdata mislukt (HTTP ' + res.status + ')');
-  const j = await res.json();
+  const j = await fetchJson(url);
   j._offset = (j.utc_offset_seconds || 0) * 1000;
   return j;
 }
@@ -973,6 +978,7 @@ function loadWeather(lat, lon){
     renderWeer(wx);
     renderNacht(lat, lon, wx);
   }).catch(err => {
+    if (lastWx) return; // houd de vorige weergave; beter dan alles weghalen
     $('wxHint').style.display = 'block';
     $('wxHint').textContent = '⚠️ ' + (err.message || 'Weerdata niet beschikbaar');
     $('wx').style.display = 'none';
