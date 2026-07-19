@@ -101,7 +101,7 @@ test.describe('Getijden-app (UI; tegels/radar/atlas live, Open-Meteo gestubd)', 
     await page.evaluate(() => window._map.setView([0, -60], 1)); // eerst 'verdwalen'
     await page.click('#locBtn');
     await expect(page.locator('#locName')).toHaveText(/52\.37°N/, { timeout: 15_000 });
-    expect(await page.evaluate(() => window._map.getZoom())).toBe(9);
+    await expect.poll(() => page.evaluate(() => window._map.getZoom()), { timeout: 8_000 }).toBe(9);
   });
 
   test('sheet klapt in en uit via de grabber', async ({ page }) => {
