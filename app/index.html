@@ -99,7 +99,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
 .wx-days{margin-top:4px}
 .wx-row{display:flex;align-items:center;gap:.45rem;padding:.3rem 0;border-bottom:1px solid var(--sep);font-size:.85rem}
 .wx-row:last-child{border-bottom:0}
-.wx-row .dy{width:2.4rem;color:var(--text-2)}
+.wx-row .dy{width:3.1rem;color:var(--text-2);white-space:nowrap}
 .wx-row .ic{width:1.5rem;text-align:center}
 .wx-row .pr{width:3.9rem;color:var(--blue);font-size:.74rem}
 .wx-row .tmin{color:var(--text-2);width:2.2rem;text-align:right;font-variant-numeric:tabular-nums}
@@ -110,7 +110,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
 .wx-src select{font:inherit;color:var(--blue);border:0;background:var(--tile);border-radius:6px;padding:.25rem .4rem;max-width:13rem}
 .nx-row{display:flex;align-items:center;gap:.55rem;padding:.3rem 0;border-bottom:1px solid var(--sep);font-size:.85rem}
 .nx-row:last-child{border-bottom:0}
-.nx-row .dy{width:2.4rem;color:var(--text-2)}
+.nx-row .dy{width:3.1rem;color:var(--text-2);white-space:nowrap}
 .nx-row .det{flex:1;color:var(--text-2);font-size:.78rem}
 .score{min-width:2.2rem;text-align:center;font-weight:700;border-radius:6px;padding:.05rem .3rem;font-size:.82rem}
 .s-goed{background:rgba(52,199,89,.18);color:#248a3d}
@@ -646,13 +646,13 @@ function nightWindow(dayStartMs, lat, lon){
   const T1 = sunTimes(dayStartMs + 12*3600e3, lat, lon);
   const W2 = sunTimes(dayStartMs + 36*3600e3, lat, lon);
   const cand = [
-    [T1.astroDusk,    2*W2.noon - W2.astroDusk,    'astronomisch donker'],
-    [T1.nauticalDusk, 2*W2.noon - W2.nauticalDusk, 'nautisch donker'],
-    [T1.civilDusk,    2*W2.noon - W2.civilDusk,    'burgerlijk donker'],
+    [T1.astroDusk,    2*W2.noon - W2.astroDusk,    'astronomisch'],
+    [T1.nauticalDusk, 2*W2.noon - W2.nauticalDusk, 'nautisch'],
+    [T1.civilDusk,    2*W2.noon - W2.civilDusk,    'burgerlijk'],
   ];
   for (const [du, dawn, lbl] of cand)
     if (!isNaN(du) && !isNaN(dawn)) return { start: du, end: dawn, label: lbl };
-  return { start: dayStartMs + 23*3600e3, end: dayStartMs + 28*3600e3, label: 'nacht (23–04u)' };
+  return { start: dayStartMs + 23*3600e3, end: dayStartMs + 28*3600e3, label: 'vast venster' };
 }
 function nightScore(cloudPct, moonFrac, moonUp){
   const moonFactor = moonFrac * (moonUp ? 1 : 0.2);
