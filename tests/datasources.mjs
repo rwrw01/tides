@@ -46,6 +46,10 @@ const checks = [
       const n = (j.daily?.temperature_2m_max || []).filter(x => x !== null).length;
       return 'levert ' + n + '/7 dagen (kort bereik is verwacht)';
     } },
+  { name: 'OpenWeatherMap overlay-tegel (bewolking, key-check)', critical: false, type: 'image',
+    url: 'https://tile.openweathermap.org/map/clouds_new/6/32/21.png?appid=645b6d61fc5840fada8d370fc3d32896' },
+  { name: 'Lorenz-atlas binaire tegel (NL: tegel 37,24)', critical: false, type: 'text',
+    url: 'https://djlorenz.github.io/astronomy/binary_tiles/2024/binary_tile_37_24.dat.gz' },
   { name: 'RainViewer weather-maps.json', critical: false, type: 'json',
     url: 'https://api.rainviewer.com/public/weather-maps.json',
     validate: j => {
@@ -122,17 +126,30 @@ if (rainviewerTile) {
   // maar de echte bewaking is de e2e-test die de URL-zoom clampt.
 }
 
-// Eenmalige probe voor de Bortle-decoder: haal het decodeer-JS van de
-// Lorenz-lichtvervuilingsatlas op (sandbox kan deze host niet bereiken).
+// Probe voor de Bortle-decoder: vind compressed2full() en de resterende
+// LP-zonegrenzen in de Lorenz-atlas (sandbox kan deze host niet bereiken).
 let lorenz = '';
 try {
-  const r = await fetch('https://djlorenz.github.io/astronomy/lp/overlay/dark.html', { signal: AbortSignal.timeout(15000) });
+  const base = 'https://djlorenz.github.io/astronomy/lp/overlay/';
+  const r = await fetch(base + 'dark.html', { signal: AbortSignal.timeout(15000) });
   const t = await r.text();
-  const i = t.indexOf('binary_tiles');
-  lorenz = i >= 0 ? t.slice(Math.max(0, i - 2200), i + 2800)
-                  : '(geen "binary_tiles" in dark.html; lengte=' + t.length + ')';
+  const bodies = [['dark.html', t]];
+  for (const m of t.matchAll(/<script[^>]+src="([^"]+)"/g)){
+    const u = m[1].startsWith('http') ? m[1] : base + m[1];
+    if (!u.includes('djlorenz') && m[1].startsWith('http')) continue;
+    try { const rr = await fetch(u, { signal: AbortSignal.timeout(15000) }); bodies.push([m[1], await rr.text()]); } catch(e){}
+  }
+  for (const [nm, body] of bodies){
+    let i = body.indexOf('function compressed2full');
+    if (i < 0) i = body.indexOf('compressed2full=');
+    if (i >= 0) lorenz += '\n// compressed2full uit ' + nm + '\n' + body.slice(i, i + 900) + '\n';
+    const z = body.indexOf("'5a'");
+    if (z >= 0) lorenz += '\n// zones vanaf 5a uit ' + nm + '\n' + body.slice(z, z + 1700) + '\n';
+  }
+  if (!lorenz) lorenz = 'niets gevonden; scripts: ' +
+    JSON.stringify([...t.matchAll(/<script[^>]+src="([^"]+)"/g)].map(m => m[1]));
 } catch (e) { lorenz = 'probe mislukt: ' + e.message; }
-console.log('\n### Lorenz-atlas probe\n```\n' + lorenz + '\n```\n');
+console.log('\n### Lorenz-atlas probe v2\n```\n' + lorenz + '\n```\n');
 
 let md = '## Databronnen-smoketest\n\n| Bron | Status | Detail | Kritiek |\n|---|---|---|---|\n';
 for (const r of rows) md += `| ${r.name} | ${r.status} | ${r.detail} | ${r.critical ? 'ja' : 'nee'} |\n`;

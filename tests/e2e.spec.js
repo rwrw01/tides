@@ -16,13 +16,25 @@ test.describe('Getijden-app (live databronnen)', () => {
     expect(src).toContain('basemaps.cartocdn.com');
   });
 
-  test('satelliet-toggle wisselt naar Esri-tegels', async ({ page }) => {
+  test('lagenmenu: satelliet-basiskaart wisselt naar Esri-tegels', async ({ page }) => {
     await page.waitForFunction(
       () => document.querySelectorAll('#map img.leaflet-tile-loaded').length >= 1,
       null, { timeout: 25_000 });
     await page.click('#layerBtn');
+    await page.click('#baseSeg button[data-base="sat"]');
+    await page.click('#layerDone');
     await page.waitForFunction(
       () => [...document.querySelectorAll('#map img.leaflet-tile')].some(i => i.src.includes('arcgisonline')),
+      null, { timeout: 25_000 });
+  });
+
+  test('lagenmenu: OpenWeatherMap-overlay laadt tegels (key geldig)', async ({ page }) => {
+    await page.click('#layerBtn');
+    await page.click('#ovSeg button[data-ov="clouds_new"]');
+    await page.click('#layerDone');
+    // leaflet-tile-loaded verschijnt alleen bij een geslaagde download → valideert ook de API-key
+    await page.waitForFunction(
+      () => [...document.querySelectorAll('#map img.leaflet-tile-loaded')].some(i => i.src.includes('tile.openweathermap.org')),
       null, { timeout: 25_000 });
   });
 
@@ -42,6 +54,8 @@ test.describe('Getijden-app (live databronnen)', () => {
     // geen harde foutstijl en de kaart blijft bedienbaar
     await expect(page.locator('#hint')).not.toHaveClass(/err/);
     await page.click('#layerBtn');
+    await expect(page.locator('#layerSheet')).toBeVisible();
+    await page.click('#layerDone');
     await expect(page.locator('#mapErr')).toBeHidden();
   });
 
@@ -82,11 +96,11 @@ test.describe('Getijden-app (live databronnen)', () => {
   });
 
   test('panelen: dots en instellingenmenu', async ({ page }) => {
-    await expect(page.locator('#dots .dot')).toHaveCount(2);
+    await expect(page.locator('#dots .dot')).toHaveCount(4);
     await page.click('#cfgBtn');
-    await expect(page.locator('#cfgList .cfg-row')).toHaveCount(2);
+    await expect(page.locator('#cfgList .cfg-row')).toHaveCount(4);
     await page.click('#cfgList .cfg-row[data-id="hemel"] button[data-act="toggle"]');
-    await expect(page.locator('#dots .dot')).toHaveCount(1);
+    await expect(page.locator('#dots .dot')).toHaveCount(3);
     await page.click('#cfgList .cfg-row[data-id="hemel"] button[data-act="toggle"]');
     await page.click('#cfgDone');
     await expect(page.locator('#cfgSheet')).toBeHidden();
