@@ -50,8 +50,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
        background:var(--sheet);-webkit-backdrop-filter:blur(24px) saturate(1.8);backdrop-filter:blur(24px) saturate(1.8);
        border-radius:16px 16px 0 0;box-shadow:0 -4px 24px rgba(0,0,0,.16);
        padding:8px 16px calc(14px + env(safe-area-inset-bottom));
-       transition:transform .3s cubic-bezier(.3,.9,.4,1)}
-.grabber{width:36px;height:5px;border-radius:3px;background:rgba(120,120,128,.35);margin:2px auto 10px}
+       transition:transform .3s cubic-bezier(.3,.9,.4,1);will-change:transform}
+.sheet.collapsed{transform:translateY(calc(100% - 76px - env(safe-area-inset-bottom)))}
+.grab{padding:2px 0 6px;cursor:grab}
+.grabber{width:36px;height:5px;border-radius:3px;background:rgba(120,120,128,.35);margin:2px auto 4px}
 .loc-row{display:flex;align-items:baseline;justify-content:space-between;gap:.6rem;min-height:1.5em}
 .loc-name{font-size:1.05rem;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pill{flex-shrink:0;font-size:.72rem;font-weight:600;padding:.18rem .55rem;border-radius:99px;background:var(--tile);color:var(--text-2)}
@@ -71,7 +73,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
 #spark{width:100%;height:74px;display:block;margin-top:10px}
 .panels{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;margin:0 -16px;scrollbar-width:none}
 .panels::-webkit-scrollbar{display:none}
-.panel{flex:0 0 100%;min-width:100%;scroll-snap-align:center;padding:0 16px}
+.panel{flex:0 0 100%;min-width:100%;scroll-snap-align:center;padding:0 16px;
+       max-height:52vh;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.panel::-webkit-scrollbar{display:none}
 .ptitle{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-2);margin-top:6px}
 .dots{display:flex;justify-content:center;gap:6px;margin-top:10px}
 .dot{width:6px;height:6px;border-radius:50%;background:rgba(120,120,128,.35)}
@@ -148,7 +152,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
 </div>
 
 <div class="sheet" id="sheet">
-  <div class="grabber"></div>
+  <div class="grab" id="grab" aria-label="Paneel in- of uitklappen"><div class="grabber"></div></div>
   <div class="loc-row">
     <div class="loc-name" id="locName">Getijden</div>
     <span class="pill" id="pill" style="display:none"></span>
@@ -167,6 +171,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
           <div class="tile"><div class="k">Verschil</div><div class="v" id="rng">–</div><div class="s" id="rngS"></div></div>
         </div>
         <svg id="spark" viewBox="0 0 360 74" preserveAspectRatio="none" aria-label="Waterstand komende 30 uur"></svg>
+        <div id="seaExtra" style="display:none">
+          <div class="tiles" style="margin-top:8px">
+            <div class="tile"><div class="k">Watertemp</div><div class="v" id="sstNow" style="font-size:1.05rem">–</div><div class="s">zeewater nu</div></div>
+            <div class="tile"><div class="k">Golven nu</div><div class="v" id="wvNow" style="font-size:1.05rem">–</div><div class="s" id="wvS"></div></div>
+            <div class="tile"><div class="k">Golven max</div><div class="v" id="wvMax" style="font-size:1.05rem">–</div><div class="s" id="wvMaxS"></div></div>
+          </div>
+          <svg id="wvSpark" viewBox="0 0 360 60" preserveAspectRatio="none" aria-label="Golfhoogte-verwachting"></svg>
+        </div>
       </div>
     </section>
     <section class="panel" data-panel="hemel">
@@ -184,6 +196,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
           <div class="tile"><div class="k">Maan onder</div><div class="v" id="moonset">–</div><div class="s"></div></div>
         </div>
         <div class="twilight" id="twilight"></div>
+        <div id="nx" style="display:none">
+          <div class="tiles" style="margin-top:8px">
+            <div class="tile"><div class="k">Bortle</div><div class="v" id="nxBortle" style="font-size:1.05rem">…</div><div class="s" id="nxBortleS"></div></div>
+            <div class="tile hw"><div class="k">Vannacht</div><div class="v" id="nxTonight">–</div><div class="s" id="nxTonightS"></div></div>
+            <div class="tile"><div class="k">Donker</div><div class="v" id="nxDark" style="font-size:.98rem">–</div><div class="s" id="nxDarkS"></div></div>
+          </div>
+          <div id="nxNights" style="margin-top:6px"></div>
+          <div class="nx-note">Sterrenkijk-index 0–10 per nacht: bewolking tijdens het donkere venster × maanstoring
+            (verlichting en of de maan op is). Bortle 1 = perfect donker, 9 = binnenstad.</div>
+        </div>
       </div>
     </section>
     <section class="panel" data-panel="weer">
@@ -199,25 +221,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
           <div class="tile"><div class="k">Wind</div><div class="v" id="wxWind" style="font-size:1.05rem">–</div><div class="s" id="wxWindS"></div></div>
           <div class="tile"><div class="k">Dauwpunt</div><div class="v" id="wxDew" style="font-size:1.05rem">–</div><div class="s" id="wxDewS"></div></div>
         </div>
-        <svg id="wxChart" viewBox="0 0 360 88" preserveAspectRatio="none" aria-label="Temperatuur en neerslag komende 24 uur"></svg>
+        <div class="seg" style="margin-top:8px">
+          <button data-range="dag" id="rangeDag">Dag (per uur)</button>
+          <button data-range="week" id="rangeWeek">Week</button>
+        </div>
+        <svg id="wxChart" viewBox="0 0 360 88" preserveAspectRatio="none" aria-label="Temperatuur en neerslag"></svg>
         <div class="wx-days" id="wxDays"></div>
         <div class="wx-src">Model:
           <select id="wxModel" aria-label="Weermodel kiezen"></select>
         </div>
-      </div>
-    </section>
-    <section class="panel" data-panel="nacht">
-      <div class="ptitle">Nachthemel</div>
-      <div class="hint" id="nxHint">Tik op de kaart om een pin te zetten</div>
-      <div id="nx" style="display:none">
-        <div class="tiles">
-          <div class="tile"><div class="k">Bortle</div><div class="v" id="nxBortle" style="font-size:1.05rem">…</div><div class="s" id="nxBortleS"></div></div>
-          <div class="tile hw"><div class="k">Vannacht</div><div class="v" id="nxTonight">–</div><div class="s" id="nxTonightS"></div></div>
-          <div class="tile"><div class="k">Donker</div><div class="v" id="nxDark" style="font-size:.98rem">–</div><div class="s" id="nxDarkS"></div></div>
-        </div>
-        <div id="nxNights" style="margin-top:6px"></div>
-        <div class="nx-note">Sterrenkijk-index 0–10 per nacht: bewolking tijdens het donkere venster × maanstoring
-          (verlichting en of de maan op is). Bortle 1 = perfect donker, 9 = binnenstad.</div>
       </div>
     </section>
   </div>
@@ -225,7 +237,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
   <div class="colofon">Ralph Wagter · <a href="https://claude.ai/code">Claude Code</a> ·
     <a href="https://eupl.eu/">EUPL-1.2</a> · <a href="https://github.com/rwrw01/tides">GitHub</a> ·
     data <a href="https://open-meteo.com">Open-Meteo</a> · radar <a href="https://www.rainviewer.com">RainViewer</a> ·
-    lagen <a href="https://openweathermap.org">OpenWeatherMap</a> (niet voor navigatie)</div>
+    lagen <a href="https://openweathermap.org">OpenWeatherMap</a> ·
+    licht <a href="https://djlorenz.github.io/astronomy/lp/">Lorenz-atlas</a> (niet voor navigatie)</div>
 </div>
 
 <div class="cfg-sheet" id="layerSheet" hidden>
@@ -379,15 +392,18 @@ $('radarPlay').addEventListener('click', () => {
 async function fetchSeries(lat, lon){
   const url = 'https://marine-api.open-meteo.com/v1/marine?latitude=' + lat.toFixed(4) +
     '&longitude=' + lon.toFixed(4) +
-    '&hourly=sea_level_height_msl&past_days=1&forecast_days=2&timezone=auto&cell_selection=sea';
+    '&hourly=sea_level_height_msl,wave_height,sea_surface_temperature' +
+    '&past_days=1&forecast_days=2&timezone=auto&cell_selection=sea';
   const res = await fetch(url);
   if (!res.ok) throw new Error('Kon geen data ophalen (HTTP ' + res.status + ')');
   const j = await res.json();
   const times = (j.hourly && j.hourly.time) || [], raw = (j.hourly && j.hourly.sea_level_height_msl) || [];
-  const t = [], h = [];
+  const wvRaw = (j.hourly && j.hourly.wave_height) || [], stRaw = (j.hourly && j.hourly.sea_surface_temperature) || [];
+  const t = [], h = [], wv = [], st = [];
   for (let i = 0; i < times.length; i++){
     if (raw[i] === null || raw[i] === undefined) continue;
     t.push(Date.parse(times[i] + ':00Z')); h.push(raw[i]);
+    wv.push(wvRaw[i] ?? null); st.push(stRaw[i] ?? null);
   }
   if (h.length < 30){
     const e = new Error('Geen getijdedata hier (binnenland of ver van zee) — kaart en radar werken wél');
@@ -395,7 +411,13 @@ async function fetchSeries(lat, lon){
     e.utcOffset = (j.utc_offset_seconds || 0) * 1000; // tijdzone blijft bruikbaar voor astronomie
     throw e;
   }
-  return { t, h, utcOffset: (j.utc_offset_seconds || 0) * 1000 };
+  return { t, h, wv, st, utcOffset: (j.utc_offset_seconds || 0) * 1000 };
+}
+function valAt(t, arr, now){
+  let i = t.findIndex(x => x >= now);
+  if (i < 0) i = t.length - 1;
+  if (i === 0) return arr[0];
+  return arr[i] !== null ? arr[i] : arr[i-1];
 }
 function findExtrema(t, h){
   const ex = [];
@@ -462,6 +484,41 @@ function render(s){
   else if (mean < 4){ pill.className='pill meso'; pill.textContent='mesotidaal'; }
   else { pill.className='pill macro'; pill.textContent='macrotidaal'; }
   spark(s, ex, now);
+  // zee-extra's: watertemperatuur en golfhoogte (zelfde venster als het getij)
+  const hasSea = s.wv.some(v => v !== null) || s.st.some(v => v !== null);
+  $('seaExtra').style.display = hasSea ? 'block' : 'none';
+  if (hasSea){
+    const sst = valAt(s.t, s.st, now);
+    $('sstNow').textContent = sst !== null && sst !== undefined ? fmt1(sst) + '°' : '—';
+    const wvn = valAt(s.t, s.wv, now);
+    $('wvNow').textContent = wvn !== null && wvn !== undefined ? fmt1(wvn) + ' m' : '—';
+    let mx = -1, mxT = 0;
+    for (let i = 0; i < s.t.length; i++)
+      if (s.t[i] >= now && s.wv[i] !== null && s.wv[i] > mx){ mx = s.wv[i]; mxT = s.t[i]; }
+    if (mx >= 0){
+      const dd = new Date(mxT);
+      $('wvMax').textContent = fmt1(mx) + ' m';
+      $('wvMaxS').textContent = DAYS_NL[dd.getUTCDay()] + ' ' + clock(mxT);
+    } else { $('wvMax').textContent = '—'; $('wvMaxS').textContent = ''; }
+    drawMini($('wvSpark'), s.t, s.wv, now);
+  }
+}
+function drawMini(svg, t, vals, now){
+  const idx = []; for (let i = 0; i < t.length; i++) if (vals[i] !== null) idx.push(i);
+  if (idx.length < 5){ svg.style.display = 'none'; return; }
+  svg.style.display = 'block';
+  const W = 360, H = 60, pT = 12, pB = 6;
+  const x0 = t[idx[0]], x1 = t[idx[idx.length-1]];
+  const vmax = Math.max(0.5, ...idx.map(i => vals[i])) * 1.15;
+  const X = v => (v - x0) / (x1 - x0) * W, Y = v => pT + (1 - v / vmax) * (H - pT - pB);
+  let line = '';
+  idx.forEach((i, k) => line += (k ? 'L' : 'M') + X(t[i]).toFixed(1) + ' ' + Y(vals[i]).toFixed(1) + ' ');
+  let g = `<path d="${line} L ${X(t[idx[idx.length-1]]).toFixed(1)} ${H} L ${X(t[idx[0]]).toFixed(1)} ${H} Z" fill="rgba(88,86,214,.16)"/>` +
+    `<path d="${line}" fill="none" stroke="#5856d6" stroke-width="1.8"/>`;
+  if (now >= x0 && now <= x1)
+    g += `<line x1="${X(now)}" y1="4" x2="${X(now)}" y2="${H}" stroke="#ff3b30" stroke-width="1.3"/>`;
+  g += `<text x="4" y="11" font-size="9.5" fill="#5856d6" font-weight="600">golf ${fmt1(vmax/1.15)} m max</text>`;
+  svg.innerHTML = g;
 }
 function heightNow(s, now){
   let i = s.t.findIndex(t => t >= now);
@@ -623,7 +680,7 @@ const WINDDIR = d => ['N','NO','O','ZO','Z','ZW','W','NW'][Math.round(d/45) % 8]
 async function fetchWeather(lat, lon){
   let url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat.toFixed(4) + '&longitude=' + lon.toFixed(4) +
     '&current=temperature_2m,apparent_temperature,dew_point_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m' +
-    '&hourly=temperature_2m,precipitation,cloud_cover' +
+    '&hourly=temperature_2m,precipitation,cloud_cover,weather_code' +
     '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max' +
     '&forecast_days=7&timezone=auto&wind_speed_unit=kmh';
   if (wxModel !== 'best_match') url += '&models=' + wxModel;
@@ -648,53 +705,95 @@ function renderWeer(wx){
   $('wxWindS').textContent = 'stoten ' + Math.round(c.wind_gusts_10m) + ' km/u';
   $('wxDew').textContent = Math.round(c.dew_point_2m) + '°';
   $('wxDewS').textContent = c.dew_point_2m >= 16 ? 'drukkend' : c.dew_point_2m >= 12 ? 'ietwat vochtig' : 'fris';
-  // 24-uursgrafiek: temperatuur + neerslag
-  const h = wx.hourly || {}, times = h.time || [];
+  lastWx = wx;
+  renderWxBody();
+}
+let lastWx = null, wxRange = 'week';
+try { const r = localStorage.getItem('wxrange'); if (r === 'dag' || r === 'week') wxRange = r; } catch(e){}
+function renderWxBody(){
+  if (!lastWx) return;
+  const wx = lastWx, d = wx.daily || {}, h = wx.hourly || {}, times = h.time || [];
+  $('rangeDag').classList.toggle('on', wxRange === 'dag');
+  $('rangeWeek').classList.toggle('on', wxRange === 'week');
   const nowLocal = Date.now() + wx._offset;
   let i0 = times.findIndex(t => Date.parse(t + ':00Z') >= nowLocal - 3600e3);
   if (i0 < 0) i0 = 0;
-  const N = Math.min(24, times.length - i0);
-  const temps = h.temperature_2m.slice(i0, i0 + N), rains = h.precipitation.slice(i0, i0 + N);
-  if (N > 3){
-    const W = 360, H = 88, pT = 14, pB = 14;
+  const N = wxRange === 'dag' ? Math.min(24, times.length - i0) : (times.length - i0);
+  const temps = h.temperature_2m.slice(i0, i0 + N).filter(v => v !== null);
+  const rains = h.precipitation.slice(i0, i0 + N);
+  // grafiek: dag = 24 uur met uurticks, week = hele reeks met dagticks
+  if (temps.length > 3){
+    const W = 360, H = 88, pT = 14, pB = 14, M = temps.length;
     let tmin = Math.min(...temps), tmax = Math.max(...temps);
     const span = Math.max(tmax - tmin, 2); tmin -= span * .15; tmax += span * .15;
-    const rmax = Math.max(1, ...rains);
-    const X = i => i / (N - 1) * W, Y = v => pT + (tmax - v) / (tmax - tmin) * (H - pT - pB);
+    const rmax = Math.max(1, ...rains.filter(v => v !== null));
+    const X = i => i / (M - 1) * W, Y = v => pT + (tmax - v) / (tmax - tmin) * (H - pT - pB);
     let g = '';
-    rains.forEach((r, i) => { if (r > 0){
-      const bh = r / rmax * (H - pT - pB) * .8;
-      g += `<rect x="${X(i) - 4}" y="${H - pB - bh}" width="8" height="${bh}" rx="2" fill="rgba(90,200,250,.55)"/>`; } });
+    for (let i = 0; i < M; i++){
+      const r = rains[i];
+      if (r > 0){
+        const bh = r / rmax * (H - pT - pB) * .8, bw = Math.max(2, W / M * .55);
+        g += `<rect x="${(X(i) - bw/2).toFixed(1)}" y="${(H - pB - bh).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="1.5" fill="rgba(90,200,250,.55)"/>`;
+      }
+    }
     let line = '';
     temps.forEach((v, i) => line += (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1) + ' ');
     g += `<path d="${line}" fill="none" stroke="#ff9500" stroke-width="2"/>`;
-    for (let i = 0; i < N; i += 6){
-      const hh = times[i0 + i].slice(11, 13);
-      g += `<text x="${X(i)}" y="${H - 2}" font-size="9" fill="#8e8e93" text-anchor="middle">${hh}u</text>`;
+    if (wxRange === 'dag'){
+      for (let i = 0; i < M; i += 6)
+        g += `<text x="${X(i)}" y="${H - 2}" font-size="9" fill="#8e8e93" text-anchor="middle">${times[i0 + i].slice(11, 13)}u</text>`;
+    } else {
+      for (let i = 0; i < M; i++)
+        if (times[i0 + i].endsWith('T00:00')){
+          const dd = new Date(times[i0 + i].slice(0, 10) + 'T12:00Z');
+          g += `<line x1="${X(i)}" y1="${pT}" x2="${X(i)}" y2="${H - pB}" stroke="rgba(120,120,128,.18)"/>` +
+               `<text x="${X(i) + 2}" y="${H - 2}" font-size="9" fill="#8e8e93">${DAYS_NL[dd.getUTCDay()]}</text>`;
+        }
     }
     g += `<text x="4" y="${Y(Math.max(...temps)) - 4}" font-size="9.5" fill="#ff9500" font-weight="600">${Math.round(Math.max(...temps))}°</text>`;
     $('wxChart').innerHTML = g;
   } else $('wxChart').innerHTML = '';
-  // 7-daagse rijen
-  const dt = d.time || [];
-  const wmin = Math.min(...(d.temperature_2m_min || [0])), wmax = Math.max(...(d.temperature_2m_max || [1]));
-  $('wxDays').innerHTML = dt.map((day, i) => {
-    const code = d.weather_code ? d.weather_code[i] : null;
-    const mn = d.temperature_2m_min[i], mx = d.temperature_2m_max[i];
-    if (mn === null || mx === null) return '';
-    const dd = new Date(day + 'T12:00Z');
-    const [dic] = WMO(code);
-    const pv = d.precipitation_sum ? d.precipitation_sum[i] : null;
-    const pp = d.precipitation_probability_max ? d.precipitation_probability_max[i] : null;
-    const l = (mn - wmin) / Math.max(wmax - wmin, 1) * 100, r = (mx - wmin) / Math.max(wmax - wmin, 1) * 100;
-    return `<div class="wx-row"><span class="dy">${i === 0 ? 'nu' : DAYS_NL[dd.getUTCDay()] + ' ' + dd.getUTCDate()}</span>` +
-      `<span class="ic">${dic}</span>` +
-      `<span class="pr">${pv > 0 ? pv.toFixed(1) + ' mm' : ''}${pp > 20 && pv > 0 ? ' · ' + pp + '%' : ''}</span>` +
-      `<span class="tmin">${Math.round(mn)}°</span>` +
-      `<span class="bar"><i style="left:${l}%;width:${Math.max(r - l, 3)}%"></i></span>` +
-      `<span class="tmax">${Math.round(mx)}°</span></div>`;
-  }).join('');
+  // rijen: week = 7 dagen, dag = komende 24 uur
+  if (wxRange === 'week'){
+    const dt = d.time || [];
+    const wmin = Math.min(...(d.temperature_2m_min || [0]).filter(v => v !== null));
+    const wmax = Math.max(...(d.temperature_2m_max || [1]).filter(v => v !== null));
+    $('wxDays').innerHTML = dt.map((day, i) => {
+      const code = d.weather_code ? d.weather_code[i] : null;
+      const mn = d.temperature_2m_min[i], mx = d.temperature_2m_max[i];
+      if (mn === null || mx === null) return '';
+      const dd = new Date(day + 'T12:00Z');
+      const [dic] = WMO(code);
+      const pv = d.precipitation_sum ? d.precipitation_sum[i] : null;
+      const pp = d.precipitation_probability_max ? d.precipitation_probability_max[i] : null;
+      const l = (mn - wmin) / Math.max(wmax - wmin, 1) * 100, r = (mx - wmin) / Math.max(wmax - wmin, 1) * 100;
+      return `<div class="wx-row"><span class="dy">${i === 0 ? 'nu' : DAYS_NL[dd.getUTCDay()] + ' ' + dd.getUTCDate()}</span>` +
+        `<span class="ic">${dic}</span>` +
+        `<span class="pr">${pv > 0 ? pv.toFixed(1) + ' mm' : ''}${pp > 20 && pv > 0 ? ' · ' + pp + '%' : ''}</span>` +
+        `<span class="tmin">${Math.round(mn)}°</span>` +
+        `<span class="bar"><i style="left:${l}%;width:${Math.max(r - l, 3)}%"></i></span>` +
+        `<span class="tmax">${Math.round(mx)}°</span></div>`;
+    }).join('');
+  } else {
+    const rows = [];
+    for (let i = i0; i < Math.min(i0 + 24, times.length); i++){
+      if (h.temperature_2m[i] === null) continue;
+      const [ic2] = WMO(h.weather_code ? h.weather_code[i] : null);
+      const pv = h.precipitation[i];
+      rows.push(`<div class="wx-row"><span class="dy">${times[i].slice(11, 13)}u</span>` +
+        `<span class="ic">${ic2}</span>` +
+        `<span class="pr">${pv > 0 ? pv.toFixed(1) + ' mm' : ''}</span>` +
+        `<span style="flex:1"></span><span class="tmax">${Math.round(h.temperature_2m[i])}°</span></div>`);
+    }
+    $('wxDays').innerHTML = rows.join('');
+  }
 }
+for (const id of ['rangeDag', 'rangeWeek'])
+  $(id).addEventListener('click', e => {
+    wxRange = e.currentTarget.dataset.range;
+    try { localStorage.setItem('wxrange', wxRange); } catch(err){}
+    renderWxBody();
+  });
 
 /* -------- nachthemel: sterrenkijk-index + Bortle -------- */
 function nightWindow(dayStartMs, lat, lon){
@@ -718,7 +817,7 @@ function nightScore(cloudPct, moonFrac, moonUp){
 const scoreClass = s => s >= 7 ? 's-goed' : s >= 4 ? 's-matig' : 's-slecht';
 const scoreLabel = s => s >= 8 ? 'uitstekend' : s >= 6 ? 'goed' : s >= 4 ? 'matig' : 'slecht';
 function renderNacht(lat, lon, wx){
-  $('nxHint').style.display = 'none'; $('nx').style.display = 'block';
+  $('nx').style.display = 'block';
   const off = wx._offset;
   const h = wx.hourly || {}, times = (h.time || []).map(t => Date.parse(t + ':00Z')); // pseudo-lokaal
   const clouds = h.cloud_cover || [];
@@ -753,15 +852,50 @@ function renderNacht(lat, lon, wx){
   }).join('');
   loadBortle(lat, lon);
 }
+// Lichtvervuiling: Lorenz-atlas 2024 (VIIRS), 5°x5°-tegels van 600x600 punten
+// (1/120°), gzip; eerste hoekpunt 2 bytes, daarna delta-compressie.
+// ratio -> mpsas -> Bortle-klasse (schatting; de atlas zelf werkt met LP-zones).
+const bortleCache = {};
 async function loadBortle(lat, lon){
-  // Lichtvervuiling: Lorenz-atlas (VIIRS). Decoder volgt; toon voorlopig n.b. bij falen.
-  $('nxBortle').textContent = 'n.b.';
-  $('nxBortleS').textContent = 'atlas nog niet gekoppeld';
+  $('nxBortle').textContent = '…'; $('nxBortleS').textContent = '';
+  try {
+    const lonFDL = ((lon + 180) % 360 + 360) % 360;
+    const latFS = lat + 65;
+    const tx = Math.floor(lonFDL / 5) + 1, ty = Math.floor(latFS / 5) + 1;
+    if (ty < 1 || ty > 28) throw new Error('buiten atlasbereik');
+    const key = tx + '_' + ty;
+    if (!bortleCache[key]){
+      const res = await fetch('https://djlorenz.github.io/astronomy/binary_tiles/2024/binary_tile_' + key + '.dat.gz');
+      if (!res.ok) throw new Error('atlas http ' + res.status);
+      let bytes = new Uint8Array(await res.arrayBuffer());
+      if (bytes[0] === 0x1f && bytes[1] === 0x8b){
+        const st = new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')));
+        bytes = new Uint8Array(await st.arrayBuffer());
+      }
+      bortleCache[key] = new Int8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    }
+    const a = bortleCache[key];
+    const ix = Math.round(120 * (lonFDL - 5*(tx-1) + 1/240));
+    const iy = Math.round(120 * (latFS - 5*(ty-1) + 1/240));
+    let val = 128 * a[0] + a[1];
+    for (let i = 1; i < iy; i++) val += a[600*i + 1];
+    for (let i = 1; i < ix; i++) val += a[600*(iy-1) + 1 + i];
+    const ratio = (5/195) * (Math.exp(0.0195 * val) - 1); // kunstlicht t.o.v. natuurlijke hemel
+    const mpsas = 22 - 5 * Math.log(1 + ratio) / Math.log(100);
+    const b = mpsas >= 21.99 ? 1 : mpsas >= 21.89 ? 2 : mpsas >= 21.69 ? 3 : mpsas >= 21.25 ? 4 :
+              mpsas >= 20.49 ? '4–5' : mpsas >= 19.50 ? 5 : mpsas >= 18.94 ? 6 : mpsas >= 18.38 ? 7 :
+              mpsas >= 17.80 ? 8 : 9;
+    $('nxBortle').textContent = 'klasse ' + b;
+    $('nxBortleS').textContent = mpsas.toFixed(1) + ' mag/arcsec²';
+  } catch(e){
+    $('nxBortle').textContent = 'n.b.';
+    $('nxBortleS').textContent = 'atlas niet beschikbaar';
+  }
 }
 
 /* -------- panelen: swipe, volgorde en aan/uit -------- */
 const PANEL_DEFS = [ { id:'getij', naam:'Getij' }, { id:'weer', naam:'Weer' },
-                    { id:'hemel', naam:'Zon & maan' }, { id:'nacht', naam:'Nachthemel' } ];
+                    { id:'hemel', naam:'Hemel' } ];
 let panelCfg = null;
 try { panelCfg = JSON.parse(localStorage.getItem('panelcfg')); } catch(e){}
 if (!panelCfg || !Array.isArray(panelCfg.order) || !Array.isArray(panelCfg.off))
@@ -816,17 +950,33 @@ $('cfgSheet').addEventListener('click', e => {
 });
 applyPanels();
 
+/* -------- sheet in-/uitklappen -------- */
+const sheetEl = $('sheet');
+$('grab').addEventListener('click', () => sheetEl.classList.toggle('collapsed'));
+let touchY = null, touchInHeader = false;
+sheetEl.addEventListener('touchstart', e => {
+  touchY = e.touches[0].clientY;
+  touchInHeader = touchY - sheetEl.getBoundingClientRect().top < 70;
+}, { passive: true });
+sheetEl.addEventListener('touchend', e => {
+  if (touchY === null) return;
+  const dy = e.changedTouches[0].clientY - touchY;
+  const collapsed = sheetEl.classList.contains('collapsed');
+  if (!collapsed && dy > 45 && touchInHeader) sheetEl.classList.add('collapsed');
+  else if (collapsed && dy < -45) sheetEl.classList.remove('collapsed');
+  touchY = null;
+}, { passive: true });
+
 /* -------- weer + nachthemel laden -------- */
 function loadWeather(lat, lon){
   fetchWeather(lat, lon).then(wx => {
     renderWeer(wx);
     renderNacht(lat, lon, wx);
   }).catch(err => {
-    for (const [hintId, blockId] of [['wxHint','wx'], ['nxHint','nx']]){
-      $(hintId).style.display = 'block';
-      $(hintId).textContent = '⚠️ ' + (err.message || 'Weerdata niet beschikbaar');
-      $(blockId).style.display = 'none';
-    }
+    $('wxHint').style.display = 'block';
+    $('wxHint').textContent = '⚠️ ' + (err.message || 'Weerdata niet beschikbaar');
+    $('wx').style.display = 'none';
+    $('nx').style.display = 'none'; // sky-index vergt bewolkingsdata
   });
 }
 const sel = $('wxModel');
