@@ -73,6 +73,25 @@ test.describe('Getijden-app (live databronnen)', () => {
     for (const z of zooms) expect(z).toBeLessThanOrEqual(7);
   });
 
+  test('astronomie-paneel: werkt ook zonder getijdedata (binnenland)', async ({ page }) => {
+    await page.evaluate(() => selectLocation(50.08, 14.43)); // Praag
+    await expect(page.locator('#astro')).toBeVisible({ timeout: 25_000 });
+    await expect(page.locator('#sunrise')).toHaveText(/\d{2}:\d{2}/);
+    await expect(page.locator('#sunset')).toHaveText(/\d{2}:\d{2}/);
+    await expect(page.locator('#moonPhase')).not.toHaveText('–');
+  });
+
+  test('panelen: dots en instellingenmenu', async ({ page }) => {
+    await expect(page.locator('#dots .dot')).toHaveCount(2);
+    await page.click('#cfgBtn');
+    await expect(page.locator('#cfgList .cfg-row')).toHaveCount(2);
+    await page.click('#cfgList .cfg-row[data-id="hemel"] button[data-act="toggle"]');
+    await expect(page.locator('#dots .dot')).toHaveCount(1);
+    await page.click('#cfgList .cfg-row[data-id="hemel"] button[data-act="toggle"]');
+    await page.click('#cfgDone');
+    await expect(page.locator('#cfgSheet')).toBeHidden();
+  });
+
   test('service worker registreert', async ({ page }) => {
     const ok = await page.evaluate(() =>
       navigator.serviceWorker.register('./sw.js').then(r => !!r, () => false));

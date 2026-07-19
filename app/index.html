@@ -69,6 +69,28 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
 .tile.hw .v{color:var(--sea)} .tile.lw .v{color:var(--orange)}
 @media (prefers-color-scheme: dark){ .tile.hw .v{color:#64b5e8} }
 #spark{width:100%;height:74px;display:block;margin-top:10px}
+.panels{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;margin:0 -16px;scrollbar-width:none}
+.panels::-webkit-scrollbar{display:none}
+.panel{flex:0 0 100%;min-width:100%;scroll-snap-align:center;padding:0 16px}
+.ptitle{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-2);margin-top:6px}
+.dots{display:flex;justify-content:center;gap:6px;margin-top:10px}
+.dot{width:6px;height:6px;border-radius:50%;background:rgba(120,120,128,.35)}
+.dot.on{background:var(--blue)}
+.twilight{font-size:.76rem;color:var(--text-2);margin-top:8px;line-height:1.5}
+.cfg-btn{border:0;background:var(--tile);color:var(--text-2);width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.cfg-sheet{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.35);display:flex;align-items:flex-end}
+.cfg-sheet[hidden]{display:none}
+.cfg-card{width:100%;background:var(--bg);border-radius:16px 16px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom))}
+.cfg-card h3{font-size:1rem;margin-bottom:.4rem}
+.cfg-row{display:flex;align-items:center;gap:.7rem;padding:.55rem 0;border-bottom:1px solid var(--sep)}
+.cfg-row .nm{flex:1;font-size:.95rem}
+.updown{display:flex;gap:.3rem}
+.updown button{border:0;background:var(--tile);border-radius:6px;width:30px;height:30px;color:var(--text);font-size:.65rem;cursor:pointer}
+.updown button:disabled{opacity:.3}
+.sw{width:46px;height:28px;border-radius:14px;border:0;background:rgba(120,120,128,.3);position:relative;transition:background .2s;cursor:pointer}
+.sw::after{content:'';position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.sw.on{background:#34c759}.sw.on::after{left:20px}
+.cfg-done{margin-top:.9rem;width:100%;padding:.6rem;border:0;border-radius:10px;background:var(--blue);color:#fff;font-size:.95rem;font-weight:600;cursor:pointer}
 .colofon{margin-top:10px;padding-top:8px;border-top:1px solid var(--sep);
          font-size:.66rem;color:var(--text-2);text-align:center}
 .colofon a{color:var(--text-2)}
@@ -100,19 +122,53 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
   <div class="loc-row">
     <div class="loc-name" id="locName">Getijden</div>
     <span class="pill" id="pill" style="display:none"></span>
+    <button class="cfg-btn" id="cfgBtn" aria-label="Panelen instellen">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h10v2H4zM17 6h3v2h-3zM4 11h4v2H4zM11 11h9v2h-9zM4 16h13v2H4zM20 16h0"/><circle cx="15.5" cy="7" r="2.4"/><circle cx="9.5" cy="12" r="2.4"/><circle cx="18.5" cy="17" r="2.4"/></svg>
+    </button>
   </div>
-  <div class="hint" id="hint">Tik op de kaart om een pin te zetten</div>
-  <div id="data" style="display:none">
-    <div class="tiles">
-      <div class="tile hw"><div class="k">Hoogwater</div><div class="v" id="hwT">–</div><div class="s" id="hwS"></div></div>
-      <div class="tile lw"><div class="k">Laagwater</div><div class="v" id="lwT">–</div><div class="s" id="lwS"></div></div>
-      <div class="tile"><div class="k">Verschil</div><div class="v" id="rng">–</div><div class="s" id="rngS"></div></div>
-    </div>
-    <svg id="spark" viewBox="0 0 360 74" preserveAspectRatio="none" aria-label="Waterstand komende 30 uur"></svg>
+  <div class="panels" id="panels">
+    <section class="panel" data-panel="getij">
+      <div class="ptitle">Getij</div>
+      <div class="hint" id="hint">Tik op de kaart om een pin te zetten</div>
+      <div id="data" style="display:none">
+        <div class="tiles">
+          <div class="tile hw"><div class="k">Hoogwater</div><div class="v" id="hwT">–</div><div class="s" id="hwS"></div></div>
+          <div class="tile lw"><div class="k">Laagwater</div><div class="v" id="lwT">–</div><div class="s" id="lwS"></div></div>
+          <div class="tile"><div class="k">Verschil</div><div class="v" id="rng">–</div><div class="s" id="rngS"></div></div>
+        </div>
+        <svg id="spark" viewBox="0 0 360 74" preserveAspectRatio="none" aria-label="Waterstand komende 30 uur"></svg>
+      </div>
+    </section>
+    <section class="panel" data-panel="hemel">
+      <div class="ptitle">Hemel</div>
+      <div class="hint" id="astroHint">Tik op de kaart om een pin te zetten</div>
+      <div id="astro" style="display:none">
+        <div class="tiles">
+          <div class="tile hw"><div class="k">Zon op</div><div class="v" id="sunrise">–</div><div class="s" id="goldenM"></div></div>
+          <div class="tile lw"><div class="k">Zon onder</div><div class="v" id="sunset">–</div><div class="s" id="goldenE"></div></div>
+          <div class="tile"><div class="k">Daglengte</div><div class="v" id="daylen">–</div><div class="s" id="noonS"></div></div>
+        </div>
+        <div class="tiles" style="margin-top:8px">
+          <div class="tile"><div class="k">Maan</div><div class="v" id="moonPhase" style="font-size:.92rem">–</div><div class="s" id="moonIll"></div></div>
+          <div class="tile"><div class="k">Maan op</div><div class="v" id="moonrise">–</div><div class="s"></div></div>
+          <div class="tile"><div class="k">Maan onder</div><div class="v" id="moonset">–</div><div class="s"></div></div>
+        </div>
+        <div class="twilight" id="twilight"></div>
+      </div>
+    </section>
   </div>
+  <div class="dots" id="dots"></div>
   <div class="colofon">Ralph Wagter · <a href="https://claude.ai/code">Claude Code</a> ·
     <a href="https://eupl.eu/">EUPL-1.2</a> · <a href="https://github.com/rwrw01/tides">GitHub</a> ·
     data <a href="https://open-meteo.com">Open-Meteo</a> · radar <a href="https://www.rainviewer.com">RainViewer</a> (niet voor navigatie)</div>
+</div>
+
+<div class="cfg-sheet" id="cfgSheet" hidden>
+  <div class="cfg-card">
+    <h3>Panelen</h3>
+    <div id="cfgList"></div>
+    <button class="cfg-done" id="cfgDone">Klaar</button>
+  </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -217,7 +273,9 @@ async function fetchSeries(lat, lon){
   }
   if (h.length < 30){
     const e = new Error('Geen getijdedata hier (binnenland of ver van zee) — kaart en radar werken wél');
-    e.soft = true; throw e;
+    e.soft = true;
+    e.utcOffset = (j.utc_offset_seconds || 0) * 1000; // tijdzone blijft bruikbaar voor astronomie
+    throw e;
   }
   return { t, h, utcOffset: (j.utc_offset_seconds || 0) * 1000 };
 }
@@ -252,9 +310,14 @@ function selectLocation(lat, lon){
   fetchSeries(lat, lon).then(s => {
     try { localStorage.setItem('tidepin', JSON.stringify({lat, lon})); } catch(e){}
     render(s);
+    renderAstro(lat, lon, s.utcOffset);
   }).catch(err => {
     hint.className = err && err.soft ? 'hint' : 'hint err';
     hint.textContent = (err && err.soft ? '🌍 ' : '⚠️ ') + (err.message || 'Er ging iets mis');
+    if (err && err.soft){ try { localStorage.setItem('tidepin', JSON.stringify({lat, lon})); } catch(e){} }
+    // astronomie is client-side en werkt dus ook binnenland/offline
+    const off = err && err.utcOffset !== undefined ? err.utcOffset : -new Date().getTimezoneOffset() * 60000;
+    renderAstro(lat, lon, off);
   });
 }
 function render(s){
@@ -309,6 +372,170 @@ function spark(s, ex, now){
   g += `<line x1="${X(now)}" y1="2" x2="${X(now)}" y2="${H}" stroke="#ff3b30" stroke-width="1.4"/>`;
   $('spark').innerHTML = g;
 }
+
+/* -------- astronomie: client-side, NOAA/Meeus-formules -------- */
+const RAD = Math.PI/180, DAY = 86400e3, J2000_MS = Date.UTC(2000, 0, 1, 12);
+const E_OBL = RAD * 23.4397;
+const toDays = ms => (ms - J2000_MS) / DAY;
+const fromDays = d => J2000_MS + d * DAY;
+function sunCoords(d){
+  const M = RAD * (357.5291 + 0.98560028 * d);
+  const L = M + RAD * (1.9148*Math.sin(M) + 0.02*Math.sin(2*M) + 0.0003*Math.sin(3*M)) + RAD*102.9372 + Math.PI;
+  return { M, L, dec: Math.asin(Math.sin(L) * Math.sin(E_OBL)),
+    ra: Math.atan2(Math.sin(L) * Math.cos(E_OBL), Math.cos(L)) };
+}
+function sunTimes(ms, lat, lon){
+  const lw = RAD * -lon, phi = RAD * lat;
+  const n = Math.round(toDays(ms) - 0.0009 - lw / (2*Math.PI));
+  const ds = 0.0009 + lw / (2*Math.PI) + n;
+  const { M, L, dec } = sunCoords(ds);
+  const Jnoon = ds + 0.0053*Math.sin(M) - 0.0069*Math.sin(2*L);
+  const pair = h => {
+    const w = Math.acos((Math.sin(h*RAD) - Math.sin(phi)*Math.sin(dec)) / (Math.cos(phi)*Math.cos(dec)));
+    if (isNaN(w)) return { rise: NaN, set: NaN };
+    const Jset = 0.0009 + (w + lw) / (2*Math.PI) + n + 0.0053*Math.sin(M) - 0.0069*Math.sin(2*L);
+    return { set: fromDays(Jset), rise: fromDays(Jnoon - (Jset - Jnoon)) };
+  };
+  const su = pair(-0.833), civ = pair(-6), nau = pair(-12), ast = pair(-18), gold = pair(6);
+  return { sunrise: su.rise, sunset: su.set, noon: fromDays(Jnoon),
+    civilDusk: civ.set, nauticalDusk: nau.set, astroDusk: ast.set,
+    goldenEnd: gold.rise, goldenStart: gold.set };
+}
+function moonCoords(d){
+  const L = RAD*(218.316 + 13.176396*d), M = RAD*(134.963 + 13.064993*d), F = RAD*(93.272 + 13.229350*d);
+  const l = L + RAD*6.289*Math.sin(M), b = RAD*5.128*Math.sin(F), dist = 385001 - 20905*Math.cos(M);
+  return { ra: Math.atan2(Math.sin(l)*Math.cos(E_OBL) - Math.tan(b)*Math.sin(E_OBL), Math.cos(l)),
+    dec: Math.asin(Math.sin(b)*Math.cos(E_OBL) + Math.cos(b)*Math.sin(E_OBL)*Math.sin(l)), dist };
+}
+function moonAltitude(ms, lat, lon){
+  const d = toDays(ms), c = moonCoords(d);
+  const H = RAD*(280.16 + 360.9856235*d) - RAD*-lon - c.ra;
+  const phi = RAD*lat;
+  return Math.asin(Math.sin(phi)*Math.sin(c.dec) + Math.cos(phi)*Math.cos(c.dec)*Math.cos(H));
+}
+function moonTimes(midnightMs, lat, lon){
+  const hc = 0.133 * RAD;
+  let rise = null, set = null;
+  let h0 = moonAltitude(midnightMs, lat, lon) - hc;
+  for (let i = 1; i <= 24; i += 2){
+    const h1 = moonAltitude(midnightMs + i*3600e3, lat, lon) - hc;
+    const h2 = moonAltitude(midnightMs + (i+1)*3600e3, lat, lon) - hc;
+    const a = (h0 + h2)/2 - h1, b = (h2 - h0)/2;
+    const xe = -b / (2*a), ye = (a*xe + b)*xe + h1;
+    const disc = b*b - 4*a*h1;
+    let roots = 0, x1 = 0, x2 = 0;
+    if (disc >= 0){
+      const dx = Math.sqrt(disc) / (Math.abs(a)*2);
+      x1 = xe - dx; x2 = xe + dx;
+      if (Math.abs(x1) <= 1) roots++;
+      if (Math.abs(x2) <= 1) roots++;
+      if (x1 < -1) x1 = x2;
+    }
+    if (roots === 1){
+      if (h0 < 0) rise = rise ?? (midnightMs + (i + x1)*3600e3);
+      else set = set ?? (midnightMs + (i + x1)*3600e3);
+    } else if (roots === 2){
+      rise = rise ?? (midnightMs + (i + (ye < 0 ? x2 : x1))*3600e3);
+      set = set ?? (midnightMs + (i + (ye < 0 ? x1 : x2))*3600e3);
+    }
+    h0 = h2;
+  }
+  return { rise, set };
+}
+function moonIllumination(ms){
+  const d = toDays(ms), s = sunCoords(d), m = moonCoords(d), sdist = 149598000;
+  const phi = Math.acos(Math.sin(s.dec)*Math.sin(m.dec) + Math.cos(s.dec)*Math.cos(m.dec)*Math.cos(s.ra - m.ra));
+  const inc = Math.atan2(sdist * Math.sin(phi), m.dist - sdist * Math.cos(phi));
+  const angle = Math.atan2(Math.cos(s.dec)*Math.sin(s.ra - m.ra),
+    Math.sin(s.dec)*Math.cos(m.dec) - Math.cos(s.dec)*Math.sin(m.dec)*Math.cos(s.ra - m.ra));
+  return { fraction: (1 + Math.cos(inc)) / 2, phase: 0.5 + 0.5 * inc * (angle < 0 ? -1 : 1) / Math.PI };
+}
+window._astro = { sunTimes, moonTimes, moonIllumination }; // voor tests
+const MOON_ICONS = ['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'];
+const MOON_NAMES = ['Nieuwe maan','Wassende sikkel','Eerste kwartier','Wassende maan',
+                    'Volle maan','Afnemende maan','Laatste kwartier','Afnemende sikkel'];
+function renderAstro(lat, lon, offset){
+  $('astroHint').style.display = 'none';
+  $('astro').style.display = 'block';
+  const nowLocal = Date.now() + offset;
+  const midnight = Math.floor(nowLocal / DAY) * DAY - offset;
+  const T = sunTimes(midnight + 12*3600e3, lat, lon);
+  const f = t => (t && !isNaN(t)) ? clock(t + offset) : '—';
+  $('sunrise').textContent = f(T.sunrise);
+  $('sunset').textContent = f(T.sunset);
+  $('goldenM').textContent = isNaN(T.goldenEnd) ? '' : 'golden hour tot ' + f(T.goldenEnd);
+  $('goldenE').textContent = isNaN(T.goldenStart) ? '' : 'golden hour v.a. ' + f(T.goldenStart);
+  if (!isNaN(T.sunrise) && !isNaN(T.sunset)){
+    const m = Math.round((T.sunset - T.sunrise) / 60000);
+    $('daylen').textContent = Math.floor(m/60) + ' u ' + String(m%60).padStart(2,'0') + ' m';
+  } else $('daylen').textContent = '—';
+  $('noonS').textContent = 'hoogste punt ' + f(T.noon);
+  const mt = moonTimes(midnight, lat, lon);
+  $('moonrise').textContent = mt.rise ? f(mt.rise) : '—';
+  $('moonset').textContent = mt.set ? f(mt.set) : '—';
+  const mi = moonIllumination(Date.now());
+  const oct = Math.round(mi.phase * 8) % 8;
+  $('moonPhase').textContent = MOON_ICONS[oct] + ' ' + MOON_NAMES[oct];
+  $('moonIll').textContent = Math.round(mi.fraction * 100) + '% verlicht';
+  $('twilight').textContent = 'Schemering — burgerlijk tot ' + f(T.civilDusk) +
+    ' · nautisch tot ' + f(T.nauticalDusk) + ' · astronomisch tot ' + f(T.astroDusk);
+}
+
+/* -------- panelen: swipe, volgorde en aan/uit -------- */
+const PANEL_DEFS = [ { id:'getij', naam:'Getij' }, { id:'hemel', naam:'Hemel' } ];
+let panelCfg = null;
+try { panelCfg = JSON.parse(localStorage.getItem('panelcfg')); } catch(e){}
+if (!panelCfg || !Array.isArray(panelCfg.order) || !Array.isArray(panelCfg.off))
+  panelCfg = { order: PANEL_DEFS.map(p => p.id), off: [] };
+panelCfg.order = panelCfg.order.filter(id => PANEL_DEFS.some(p => p.id === id));
+for (const p of PANEL_DEFS) if (!panelCfg.order.includes(p.id)) panelCfg.order.push(p.id);
+function applyPanels(){
+  const wrap = $('panels');
+  for (const id of panelCfg.order){
+    const el = wrap.querySelector('[data-panel="' + id + '"]');
+    if (el){ wrap.appendChild(el); el.style.display = panelCfg.off.includes(id) ? 'none' : ''; }
+  }
+  const visible = panelCfg.order.filter(id => !panelCfg.off.includes(id));
+  $('dots').innerHTML = visible.map((_, i) => '<span class="dot' + (i === 0 ? ' on' : '') + '"></span>').join('');
+  $('dots').style.display = visible.length > 1 ? 'flex' : 'none';
+  wrap.scrollTo({ left: 0 });
+  try { localStorage.setItem('panelcfg', JSON.stringify(panelCfg)); } catch(e){}
+}
+$('panels').addEventListener('scroll', () => {
+  const w = $('panels').clientWidth || 1;
+  const i = Math.round($('panels').scrollLeft / w);
+  [...$('dots').children].forEach((d, k) => d.classList.toggle('on', k === i));
+}, { passive: true });
+function renderCfg(){
+  $('cfgList').innerHTML = panelCfg.order.map((id, i) => {
+    const def = PANEL_DEFS.find(p => p.id === id);
+    const on = !panelCfg.off.includes(id);
+    return '<div class="cfg-row" data-id="' + id + '">' +
+      '<span class="updown"><button data-act="up"' + (i === 0 ? ' disabled' : '') + '>▲</button>' +
+      '<button data-act="down"' + (i === panelCfg.order.length - 1 ? ' disabled' : '') + '>▼</button></span>' +
+      '<span class="nm">' + def.naam + '</span>' +
+      '<button class="sw' + (on ? ' on' : '') + '" data-act="toggle" role="switch" aria-checked="' + on + '" aria-label="' + def.naam + ' aan/uit"></button></div>';
+  }).join('');
+}
+$('cfgBtn').addEventListener('click', () => { renderCfg(); $('cfgSheet').hidden = false; });
+$('cfgDone').addEventListener('click', () => { $('cfgSheet').hidden = true; });
+$('cfgSheet').addEventListener('click', e => {
+  if (e.target === $('cfgSheet')){ $('cfgSheet').hidden = true; return; }
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const id = btn.closest('.cfg-row').dataset.id;
+  const i = panelCfg.order.indexOf(id);
+  if (btn.dataset.act === 'up' && i > 0)
+    [panelCfg.order[i-1], panelCfg.order[i]] = [panelCfg.order[i], panelCfg.order[i-1]];
+  if (btn.dataset.act === 'down' && i < panelCfg.order.length - 1)
+    [panelCfg.order[i+1], panelCfg.order[i]] = [panelCfg.order[i], panelCfg.order[i+1]];
+  if (btn.dataset.act === 'toggle'){
+    if (panelCfg.off.includes(id)) panelCfg.off = panelCfg.off.filter(x => x !== id);
+    else if (panelCfg.order.length - panelCfg.off.length > 1) panelCfg.off.push(id); // minstens één paneel aan
+  }
+  applyPanels(); renderCfg();
+});
+applyPanels();
 
 /* -------- locatieknop + start -------- */
 $('locBtn').addEventListener('click', () => {
