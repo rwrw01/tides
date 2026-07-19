@@ -57,6 +57,22 @@ test.describe('Getijden-app (live databronnen)', () => {
     console.log('RADAR-STATUS:', status);
   });
 
+  test('radar op hoog zoomniveau vraagt geen niet-bestaande tegels op', async ({ page }) => {
+    // reproduceert de veldbug: ingezoomd (z9, Spaanse noordkust) gaf
+    // "Zoom Level Not Supported"-tegels; de laag moet clampen op tegel-z 7
+    await page.evaluate(() => window._map.setView([43.48, -4.92], 9));
+    await page.click('#radarBtn');
+    await page.waitForFunction(() =>
+      [...document.querySelectorAll('#map img.leaflet-tile')].some(i => i.src.includes('rainviewer')),
+      null, { timeout: 25_000 });
+    const zooms = await page.evaluate(() =>
+      [...document.querySelectorAll('#map img.leaflet-tile')]
+        .filter(i => i.src.includes('rainviewer'))
+        .map(i => parseInt(i.src.split('/512/')[1], 10)));
+    expect(zooms.length).toBeGreaterThan(0);
+    for (const z of zooms) expect(z).toBeLessThanOrEqual(7);
+  });
+
   test('service worker registreert', async ({ page }) => {
     const ok = await page.evaluate(() =>
       navigator.serviceWorker.register('./sw.js').then(r => !!r, () => false));

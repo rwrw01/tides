@@ -68,15 +68,38 @@ for (const c of checks) {
   rows.push({ ...c, status, detail });
 }
 
+// Zoom-probe: RainViewer ondersteunt tegels t/m z7. De app clampt op
+// maxNativeZoom 8 met 512px-tegels en zoomOffset -1 (= tegel-z 7).
+// Deze probe slaat alarm zodra dat maximum verandert.
 if (rainviewerTile) {
-  let status = '❌', detail = '';
-  try {
-    const res = await fetch(rainviewerTile, { signal: AbortSignal.timeout(15000) });
-    const buf = await res.arrayBuffer();
-    if (res.ok && buf.byteLength > 100) { status = '✅'; detail = buf.byteLength + ' B'; }
-    else detail = 'HTTP ' + res.status + ', ' + buf.byteLength + ' B';
-  } catch (e) { detail = e.message; }
-  rows.push({ name: 'RainViewer radartegel', critical: false, status, detail });
+  const tileAt = (lat, lon, z) => {
+    const n = 2 ** z;
+    const x = Math.floor((lon + 180) / 360 * n);
+    const la = lat * Math.PI / 180;
+    const y = Math.floor((1 - Math.log(Math.tan(la) + 1 / Math.cos(la)) / Math.PI) / 2 * n);
+    return { x, y };
+  };
+  const basePath = rainviewerTile.split('/256/')[0];
+  const sizes = [];
+  for (const z of [6, 7, 8]) {
+    const { x, y } = tileAt(52.11, 4.24, z);
+    let detail = '', ok = false;
+    try {
+      const res = await fetch(`${basePath}/512/${z}/${x}/${y}/2/1_1.png`, { signal: AbortSignal.timeout(15000) });
+      const buf = await res.arrayBuffer();
+      sizes[z] = buf.byteLength;
+      detail = 'HTTP ' + res.status + ', ' + buf.byteLength + ' B';
+      ok = res.ok && buf.byteLength > 100;
+    } catch (e) { detail = e.message; }
+    // z6 en z7 moeten echte tegels zijn (kritiek); z8 is informatief —
+    // levert RainViewer daar ooit wél echte data, dan kan de clamp omhoog.
+    const critical = z <= 7;
+    const status = ok ? '✅' : '❌';
+    if (!ok && critical) criticalFail++;
+    rows.push({ name: `RainViewer radartegel z${z} (512px)`, critical, status, detail });
+  }
+  // placeholder-detectie: als z8 exact even groot is als z7 is dat verdacht,
+  // maar de echte bewaking is de e2e-test die de URL-zoom clampt.
 }
 
 let md = '## Databronnen-smoketest\n\n| Bron | Status | Detail | Kritiek |\n|---|---|---|---|\n';

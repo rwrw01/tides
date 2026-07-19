@@ -139,6 +139,7 @@ if (typeof L !== 'undefined'){
     attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; CARTO &middot; beeld Esri'}).addTo(map);
   darkMq.addEventListener('change', () => { if (!satOn) base.setUrl(baseUrl()); });
   map.on('click', e => selectLocation(e.latlng.lat, e.latlng.lng));
+  window._map = map; // voor e2e-tests
 } else {
   $('mapErr').style.display = 'flex';
   $('layerBtn').style.display = 'none';
@@ -153,14 +154,17 @@ async function radarInit(){
   if (!r.ok) throw new Error('radar http ' + r.status);
   const j = await r.json();
   radarFrames = ((j.radar && j.radar.past) || []).map(f =>
-    ({ time: f.time, url: j.host + f.path + '/256/{z}/{x}/{y}/2/1_1.png' }));
+    ({ time: f.time, url: j.host + f.path + '/512/{z}/{x}/{y}/2/1_1.png' }));
   if (!radarFrames.length) throw new Error('geen radarframes');
   $('radarSlider').max = radarFrames.length - 1;
 }
 function radarShow(i){
   radarIdx = i;
   if (!radarLayers[i]){
-    radarLayers[i] = L.tileLayer(radarFrames[i].url, {opacity:0, maxNativeZoom:12, maxZoom:17}).addTo(map);
+    // RainViewer-tegels bestaan t/m zoom 7; 512px-tegels met zoomOffset -1
+    // geven effectief detail t/m kaartzoom 8, daarboven schaalt Leaflet op.
+    radarLayers[i] = L.tileLayer(radarFrames[i].url,
+      {opacity:0, tileSize:512, zoomOffset:-1, maxNativeZoom:8, maxZoom:17}).addTo(map);
   }
   radarLayers.forEach((l, k) => l && l.setOpacity(k === i ? 0.65 : 0));
   $('radarSlider').value = i;
