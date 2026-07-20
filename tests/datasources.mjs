@@ -39,9 +39,14 @@ const checks = [
       const icon = (h.temperature_2m_icon_eu || []).filter(x => x !== null).length;
       const ec = (h.temperature_2m_ecmwf_ifs025 || []).filter(x => x !== null).length;
       const druk = (h.pressure_msl_icon_eu || h.pressure_msl_ecmwf_ifs025 || []).filter(x => x !== null).length;
-      return icon > 50 && ec > 100 && druk > 50
-        ? 'ok: icon ' + icon + 'u, ecmwf ' + ec + 'u, druk ' + druk + 'u'
-        : 'onvolledig: icon=' + icon + ' ecmwf=' + ec + ' druk=' + druk;
+      // wolkenlagen voeden het meteogram; per laag volstaat één van beide modellen
+      const laag = ['cloud_cover_low','cloud_cover_mid','cloud_cover_high'].map(k =>
+        Math.max((h[k + '_icon_eu'] || []).filter(x => x !== null).length,
+                 (h[k + '_ecmwf_ifs025'] || []).filter(x => x !== null).length));
+      const wolk = Math.min(...laag);
+      return icon > 50 && ec > 100 && druk > 50 && wolk > 50
+        ? 'ok: icon ' + icon + 'u, ecmwf ' + ec + 'u, druk ' + druk + 'u, wolkenlagen ' + laag.join('/') + 'u'
+        : 'onvolledig: icon=' + icon + ' ecmwf=' + ec + ' druk=' + druk + ' wolkenlagen=' + laag.join('/');
     } },
   { name: 'Open-Meteo weer — model ECMWF expliciet', critical: false, type: 'json',
     url: 'https://api.open-meteo.com/v1/forecast?latitude=52.115&longitude=4.24&current=temperature_2m&daily=temperature_2m_max&forecast_days=7&timezone=auto&models=ecmwf_ifs025',

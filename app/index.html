@@ -30,21 +30,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
 #map{position:fixed;inset:0;z-index:0;background:#b5d3e7;touch-action:none}
 #mapErr{display:none;position:fixed;inset:0;z-index:0;align-items:center;justify-content:center;
         text-align:center;color:var(--text-2);padding:2rem;font-size:.95rem}
-.ctl{position:fixed;right:calc(12px + env(safe-area-inset-right));z-index:20;width:44px;height:44px;
+.ctl{position:fixed;right:calc(12px + env(safe-area-inset-right));z-index:20;width:48px;height:48px;
      border-radius:50%;border:0;background:var(--sheet);-webkit-backdrop-filter:blur(20px) saturate(1.8);
      backdrop-filter:blur(20px) saturate(1.8);box-shadow:0 2px 10px rgba(0,0,0,.18);
      display:flex;align-items:center;justify-content:center;color:var(--blue);cursor:pointer}
 #searchBtn{top:calc(14px + env(safe-area-inset-top))}
-#locBtn{top:calc(66px + env(safe-area-inset-top))}
-#layerBtn{top:calc(118px + env(safe-area-inset-top))}
-#radarBtn{top:calc(170px + env(safe-area-inset-top))}
+#locBtn{top:calc(70px + env(safe-area-inset-top))}
+#layerBtn{top:calc(126px + env(safe-area-inset-top))}
+#radarBtn{top:calc(182px + env(safe-area-inset-top))}
 .search-bar{position:fixed;left:12px;right:68px;top:calc(14px + env(safe-area-inset-top));z-index:30;
   display:flex;align-items:center;gap:.4rem;padding:.35rem .5rem .35rem .9rem;border-radius:99px;
   background:var(--sheet);-webkit-backdrop-filter:blur(20px) saturate(1.8);backdrop-filter:blur(20px) saturate(1.8);
   box-shadow:0 2px 10px rgba(0,0,0,.18)}
 .search-bar[hidden]{display:none}
 .search-bar form{flex:1;display:flex}
-.search-bar input{flex:1;border:0;background:none;font:inherit;font-size:.95rem;color:var(--text);outline:none;min-width:0}
+.search-bar input{flex:1;border:0;background:none;font:inherit;font-size:1.05rem;color:var(--text);outline:none;min-width:0}
 .search-bar button{border:0;background:none;color:var(--text-2);font-size:1rem;cursor:pointer;padding:.2rem .4rem}
 .search-results{position:fixed;left:12px;right:68px;top:calc(64px + env(safe-area-inset-top));z-index:30;
   border-radius:12px;background:var(--sheet);-webkit-backdrop-filter:blur(20px) saturate(1.8);
@@ -53,9 +53,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
 .search-results[hidden]{display:none}
 .sr-row{padding:.55rem .9rem;border-bottom:1px solid var(--sep);cursor:pointer}
 .sr-row:last-child{border-bottom:0}
-.sr-row .nm{font-size:.92rem;font-weight:600}
-.sr-row .sub{font-size:.74rem;color:var(--text-2)}
-.sr-none{padding:.6rem .9rem;font-size:.85rem;color:var(--text-2)}
+.sr-row .nm{font-size:1.02rem;font-weight:600}
+.sr-row .sub{font-size:.84rem;color:var(--text-2)}
+.sr-none{padding:.6rem .9rem;font-size:.95rem;color:var(--text-2)}
 #radarBtn.on{color:#fff;background:var(--blue)}
 .radar-bar{position:fixed;left:12px;right:68px;top:calc(14px + env(safe-area-inset-top));z-index:15;
   display:none;align-items:center;gap:.6rem;padding:.45rem .8rem;border-radius:99px;
@@ -64,30 +64,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
 .radar-bar.on{display:flex}
 .radar-bar button{border:0;background:none;color:var(--blue);font-size:1.05rem;line-height:1;cursor:pointer;padding:.1rem}
 .radar-bar input[type=range]{flex:1;accent-color:var(--blue);min-width:0}
-.radar-bar .t{font-size:.8rem;font-weight:600;font-variant-numeric:tabular-nums;color:var(--text-2);white-space:nowrap}
+.radar-bar .t{font-size:.9rem;font-weight:600;font-variant-numeric:tabular-nums;color:var(--text-2);white-space:nowrap}
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:10;
        background:var(--sheet);-webkit-backdrop-filter:blur(24px) saturate(1.8);backdrop-filter:blur(24px) saturate(1.8);
        border-radius:16px 16px 0 0;box-shadow:0 -4px 24px rgba(0,0,0,.16);
        padding:8px 16px calc(14px + env(safe-area-inset-bottom));
        transition:transform .3s cubic-bezier(.3,.9,.4,1);will-change:transform}
-.sheet.collapsed{transform:translateY(calc(100% - 76px - env(safe-area-inset-bottom)))}
+.sheet.collapsed{transform:translateY(calc(100% - 84px - env(safe-area-inset-bottom)))}
 .grab{padding:2px 0 6px;cursor:grab}
 .grabber{width:36px;height:5px;border-radius:3px;background:rgba(120,120,128,.35);margin:2px auto 4px}
 .loc-row{display:flex;align-items:baseline;justify-content:space-between;gap:.6rem;min-height:1.5em}
-.loc-name{font-size:1.05rem;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pill{flex-shrink:0;font-size:.72rem;font-weight:600;padding:.18rem .55rem;border-radius:99px;background:var(--tile);color:var(--text-2)}
+.loc-name{font-size:1.18rem;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{flex-shrink:0;font-size:.8rem;font-weight:600;padding:.18rem .55rem;border-radius:99px;background:var(--tile);color:var(--text-2)}
 .pill.macro{background:rgba(255,59,48,.15);color:var(--red)}
 .pill.meso{background:rgba(10,132,255,.15);color:var(--blue)}
 .pill.micro{background:rgba(255,149,0,.15);color:var(--orange)}
-.hint{font-size:.9rem;color:var(--text-2);text-align:center;padding:.6rem 0 .4rem}
-.stale{font-size:.72rem;color:var(--orange);font-weight:600;margin:2px 0 2px}
+.hint{font-size:1rem;color:var(--text-2);text-align:center;padding:.6rem 0 .4rem}
+.stale{font-size:.85rem;color:var(--orange);font-weight:600;margin:2px 0 2px}
 .hint.err{color:var(--red)}
 .tiles{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
 .tile{background:var(--tile);border-radius:12px;padding:.55rem .65rem;min-width:0}
-.tile .k{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-2);
+.tile .k{font-size:.76rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-2);
          display:flex;align-items:center;gap:.25rem}
-.tile .v{font-size:1.25rem;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em;margin-top:.1rem}
-.tile .s{font-size:.72rem;color:var(--text-2);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .v{font-size:1.5rem;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em;margin-top:.1rem}
+.tile .s{font-size:.82rem;color:var(--text-2);font-variant-numeric:tabular-nums;line-height:1.25}
 .tile.hw .v{color:var(--sea)} .tile.lw .v{color:var(--orange)}
 @media (prefers-color-scheme: dark){ .tile.hw .v{color:#64b5e8} }
 #spark{width:100%;height:74px;display:block;margin-top:10px}
@@ -96,72 +96,72 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
 .panel{flex:0 0 100%;min-width:100%;scroll-snap-align:center;padding:0 16px;
        max-height:52vh;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .panel::-webkit-scrollbar{display:none}
-.ptitle{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-2);margin-top:6px}
+.ptitle{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-2);margin-top:6px}
 .dots{display:flex;justify-content:center;gap:6px;margin-top:10px}
 .dot{width:6px;height:6px;border-radius:50%;background:rgba(120,120,128,.35)}
 .dot.on{background:var(--blue)}
-.twilight{font-size:.76rem;color:var(--text-2);margin-top:8px;line-height:1.5}
-.cfg-btn{border:0;background:var(--tile);color:var(--text-2);width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.twilight{font-size:.9rem;color:var(--text-2);margin-top:8px;line-height:1.5}
+.cfg-btn{border:0;background:var(--tile);color:var(--text-2);width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .cfg-sheet{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.35);display:flex;align-items:flex-end}
 .cfg-sheet[hidden]{display:none}
 .cfg-card{width:100%;background:var(--bg);border-radius:16px 16px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom))}
-.cfg-card h3{font-size:1rem;margin-bottom:.4rem}
+.cfg-card h3{font-size:1.1rem;margin-bottom:.4rem}
 .cfg-row{display:flex;align-items:center;gap:.7rem;padding:.55rem 0;border-bottom:1px solid var(--sep)}
-.cfg-row .nm{flex:1;font-size:.95rem}
+.cfg-row .nm{flex:1;font-size:1.05rem}
 .updown{display:flex;gap:.3rem}
 .updown button{border:0;background:var(--tile);border-radius:6px;width:30px;height:30px;color:var(--text);font-size:.65rem;cursor:pointer}
 .updown button:disabled{opacity:.3}
 .sw{width:46px;height:28px;border-radius:14px;border:0;background:rgba(120,120,128,.3);position:relative;transition:background .2s;cursor:pointer}
 .sw::after{content:'';position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
 .sw.on{background:#34c759}.sw.on::after{left:20px}
-.cfg-done{margin-top:.9rem;width:100%;padding:.6rem;border:0;border-radius:10px;background:var(--blue);color:#fff;font-size:.95rem;font-weight:600;cursor:pointer}
+.cfg-done{margin-top:.9rem;width:100%;padding:.65rem;border:0;border-radius:10px;background:var(--blue);color:#fff;font-size:1.05rem;font-weight:600;cursor:pointer}
 .cfg-btn.on{background:var(--blue);color:#fff}
 .cfg-card{max-height:78vh;overflow-y:auto}
 .loc-item{position:relative;overflow:hidden;border-bottom:1px solid var(--sep)}
 .loc-item:last-child{border-bottom:0}
 .loc-del{position:absolute;top:0;right:0;bottom:0;width:88px;border:0;background:#ff3b30;color:#fff;font-size:.85rem;font-weight:600;cursor:pointer}
 .loc-main{position:relative;z-index:1;background:var(--bg);display:flex;flex-direction:column;gap:2px;padding:.6rem .2rem;transition:transform .18s;touch-action:pan-y;cursor:pointer;user-select:none;-webkit-user-select:none}
-.loc-main .nm{font-size:.95rem;font-weight:600}
-.loc-main .sub{font-size:.74rem;color:var(--text-2)}
+.loc-main .nm{font-size:1.08rem;font-weight:600}
+.loc-main .sub{font-size:.84rem;color:var(--text-2)}
 .seg{display:flex;gap:6px;margin:.45rem 0 .7rem;flex-wrap:wrap}
-.seg button{flex:1;min-width:4.6rem;border:0;border-radius:9px;padding:.5rem .3rem;background:var(--tile);color:var(--text);font-size:.85rem;cursor:pointer}
+.seg button{flex:1;min-width:4.6rem;border:0;border-radius:9px;padding:.55rem .3rem;background:var(--tile);color:var(--text);font-size:.95rem;cursor:pointer}
 .seg button.on{background:var(--blue);color:#fff;font-weight:600}
 .wx-now{display:flex;align-items:center;gap:.7rem;margin-top:6px}
-.wx-now .t{font-size:2.1rem;font-weight:700;letter-spacing:-.03em}
-.wx-now .ic{font-size:1.8rem}
-.wx-now .d{font-size:.78rem;color:var(--text-2);line-height:1.4}
-#wxChart{width:100%;height:128px;display:block;margin-top:8px}
-.wx-note{font-size:.68rem;color:var(--text-2);margin-top:3px}
-.wx-htable{display:flex;margin-top:6px;font-size:.78rem}
+.wx-now .t{font-size:2.5rem;font-weight:700;letter-spacing:-.03em}
+.wx-now .ic{font-size:2.3rem}
+.wx-now .d{font-size:.9rem;color:var(--text-2);line-height:1.4}
+#wxChart{width:100%;height:148px;display:block;margin-top:8px}
+.wx-note{font-size:.78rem;color:var(--text-2);margin-top:3px}
+.wx-htable{display:flex;margin-top:6px;font-size:.92rem}
 .wx-htable .hlab{display:flex;flex-direction:column;color:var(--text-2);padding-right:.45rem;flex-shrink:0}
-.wx-htable .hlab div{height:1.5rem;display:flex;align-items:center;font-size:.66rem;text-transform:uppercase;letter-spacing:.04em}
+.wx-htable .hlab div{height:1.75rem;display:flex;align-items:center;font-size:.74rem;text-transform:uppercase;letter-spacing:.04em}
 .wx-htable .hscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;flex:1;scrollbar-width:none}
 .wx-htable .hscroll::-webkit-scrollbar{display:none}
 .wx-htable .hrow{display:flex;width:max-content}
-.wx-htable .hrow div{width:2.6rem;height:1.5rem;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;white-space:nowrap}
-.warr{display:inline-block;margin-right:2px;font-size:.78rem;color:var(--blue)}
+.wx-htable .hrow div{width:3rem;height:1.75rem;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;white-space:nowrap}
+.warr{display:inline-block;margin-right:2px;font-size:.9rem;color:var(--blue)}
 .wx-days{margin-top:4px}
-.wx-row{display:flex;align-items:center;gap:.45rem;padding:.3rem 0;border-bottom:1px solid var(--sep);font-size:.85rem}
+.wx-row{display:flex;align-items:center;gap:.45rem;padding:.35rem 0;border-bottom:1px solid var(--sep);font-size:.98rem}
 .wx-row:last-child{border-bottom:0}
-.wx-row .dy{width:3.1rem;color:var(--text-2);white-space:nowrap}
-.wx-row .ic{width:1.5rem;text-align:center}
-.wx-row .pr{width:3.9rem;color:var(--blue);font-size:.74rem}
-.wx-row .tmin{color:var(--text-2);width:2.2rem;text-align:right;font-variant-numeric:tabular-nums}
-.wx-row .tmax{width:2.2rem;text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.wx-row .dy{width:3.5rem;color:var(--text-2);white-space:nowrap}
+.wx-row .ic{width:1.8rem;text-align:center}
+.wx-row .pr{width:4.2rem;color:var(--blue);font-size:.84rem}
+.wx-row .tmin{color:var(--text-2);width:2.5rem;text-align:right;font-variant-numeric:tabular-nums}
+.wx-row .tmax{width:2.5rem;text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
 .wx-row .bar{flex:1;height:4px;border-radius:2px;background:var(--tile);position:relative}
 .wx-row .bar i{position:absolute;top:0;bottom:0;border-radius:2px;background:linear-gradient(90deg,#5ac8fa,#ff9500)}
-.wx-src{display:flex;align-items:center;gap:.5rem;margin-top:8px;font-size:.74rem;color:var(--text-2)}
+.wx-src{display:flex;align-items:center;gap:.5rem;margin-top:8px;font-size:.84rem;color:var(--text-2)}
 .wx-src select{font:inherit;color:var(--blue);border:0;background:var(--tile);border-radius:6px;padding:.25rem .4rem;max-width:13rem}
-.nx-row{display:flex;align-items:center;gap:.55rem;padding:.3rem 0;border-bottom:1px solid var(--sep);font-size:.85rem}
+.nx-row{display:flex;align-items:center;gap:.55rem;padding:.35rem 0;border-bottom:1px solid var(--sep);font-size:.98rem}
 .nx-row:last-child{border-bottom:0}
-.nx-row .dy{width:3.1rem;color:var(--text-2);white-space:nowrap}
-.nx-row .det{flex:1;color:var(--text-2);font-size:.78rem}
-.score{min-width:2.2rem;text-align:center;font-weight:700;border-radius:6px;padding:.05rem .3rem;font-size:.82rem}
+.nx-row .dy{width:3.5rem;color:var(--text-2);white-space:nowrap}
+.nx-row .det{flex:1;color:var(--text-2);font-size:.88rem}
+.score{min-width:2.5rem;text-align:center;font-weight:700;border-radius:6px;padding:.08rem .35rem;font-size:.92rem}
 .s-goed{background:rgba(52,199,89,.18);color:#248a3d}
 .s-matig{background:rgba(255,204,0,.22);color:#9a7d0a}
 .s-slecht{background:rgba(255,59,48,.15);color:var(--red)}
 @media (prefers-color-scheme: dark){ .s-goed{color:#30d158} .s-matig{color:#ffd60a} }
-.nx-note{font-size:.7rem;color:var(--text-2);margin-top:8px;line-height:1.45}
+.nx-note{font-size:.8rem;color:var(--text-2);margin-top:8px;line-height:1.45}
 .colofon{margin-top:10px;padding-top:8px;
          font-size:.66rem;color:var(--text-2);text-align:center}
 .colofon a{color:var(--text-2)}
@@ -174,7 +174,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
 <div id="mapErr">Kaart kon niet geladen worden.<br>Controleer je internetverbinding.</div>
 
 <button class="ctl" id="searchBtn" aria-label="Zoek een plaats">
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
+  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
 </button>
 <div class="search-bar" id="searchBar" hidden>
   <form id="searchForm"><input id="searchIn" type="search" placeholder="Zoek een plaats…" autocomplete="off" enterkeyhint="search"></form>
@@ -183,13 +183,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
 <div class="search-results" id="searchResults" hidden></div>
 
 <button class="ctl" id="locBtn" aria-label="Mijn locatie">
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M21.4 2.6c.5.5.6 1.2.3 1.8L13.5 21.6c-.6 1.2-2.4 1-2.7-.3L9.2 14.8 2.7 13.2c-1.3-.3-1.5-2.1-.3-2.7L19.6 2.3c.6-.3 1.3-.2 1.8.3z"/></svg>
+  <svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><path d="M21.4 2.6c.5.5.6 1.2.3 1.8L13.5 21.6c-.6 1.2-2.4 1-2.7-.3L9.2 14.8 2.7 13.2c-1.3-.3-1.5-2.1-.3-2.7L19.6 2.3c.6-.3 1.3-.2 1.8.3z"/></svg>
 </button>
 <button class="ctl" id="layerBtn" aria-label="Kaart of satelliet">
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 8l11 6 11-6-11-6zM1 12.5 12 18.5l11-6v3L12 21.5 1 15.5v-3z"/></svg>
+  <svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 8l11 6 11-6-11-6zM1 12.5 12 18.5l11-6v3L12 21.5 1 15.5v-3z"/></svg>
 </button>
 <button class="ctl" id="radarBtn" aria-label="Buienradar aan/uit">
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 14.5a4.5 4.5 0 0 1 .4-9 6 6 0 0 1 11.3 1.6A4 4 0 0 1 17.5 14.5H6z"/><path d="M8 17l-1.5 4M12.5 17l-1.5 4M17 17l-1.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
+  <svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor"><path d="M6 14.5a4.5 4.5 0 0 1 .4-9 6 6 0 0 1 11.3 1.6A4 4 0 0 1 17.5 14.5H6z"/><path d="M8 17l-1.5 4M12.5 17l-1.5 4M17 17l-1.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
 </button>
 <div class="radar-bar" id="radarBar">
   <button id="radarPlay" aria-label="Afspelen">▶</button>
@@ -203,13 +203,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
     <div class="loc-name" id="locName">Getijden</div>
     <span class="pill" id="pill" style="display:none"></span>
     <button class="cfg-btn" id="pinBtn" aria-label="Locatie vastzetten" style="display:none">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>
     </button>
     <button class="cfg-btn" id="listBtn" aria-label="Vastgezette locaties">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
     </button>
     <button class="cfg-btn" id="cfgBtn" aria-label="Panelen instellen">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h10v2H4zM17 6h3v2h-3zM4 11h4v2H4zM11 11h9v2h-9zM4 16h13v2H4zM20 16h0"/><circle cx="15.5" cy="7" r="2.4"/><circle cx="9.5" cy="12" r="2.4"/><circle cx="18.5" cy="17" r="2.4"/></svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h10v2H4zM17 6h3v2h-3zM4 11h4v2H4zM11 11h9v2h-9zM4 16h13v2H4zM20 16h0"/><circle cx="15.5" cy="7" r="2.4"/><circle cx="9.5" cy="12" r="2.4"/><circle cx="18.5" cy="17" r="2.4"/></svg>
     </button>
   </div>
   <div class="stale" id="staleNote" style="display:none"></div>
@@ -278,7 +278,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
           <button data-range="dag" id="rangeDag">Dag (per uur)</button>
           <button data-range="week" id="rangeWeek">Week</button>
         </div>
-        <svg id="wxChart" viewBox="0 0 360 128" preserveAspectRatio="none" aria-label="Temperatuur en neerslag"></svg>
+        <svg id="wxChart" viewBox="0 0 360 148" preserveAspectRatio="none" aria-label="Temperatuur en neerslag"></svg>
         <div class="wx-days" id="wxDays"></div>
         <div class="wx-src">Model:
           <select id="wxModel" aria-label="Weermodel kiezen"></select>
@@ -663,7 +663,7 @@ function drawMini(svg, t, vals, now){
     `<path d="${line}" fill="none" stroke="#5856d6" stroke-width="1.8"/>`;
   if (now >= x0 && now <= x1)
     g += `<line x1="${X(now)}" y1="4" x2="${X(now)}" y2="${H}" stroke="#ff3b30" stroke-width="1.3"/>`;
-  g += `<text x="4" y="11" font-size="9.5" fill="#5856d6" font-weight="600">golf ${fmt1(vmax/1.15)} m max</text>`;
+  g += `<text x="4" y="12" font-size="11" fill="#5856d6" font-weight="600">golf ${fmt1(vmax/1.15)} m max</text>`;
   svg.innerHTML = g;
 }
 function heightNow(s, now){
@@ -691,7 +691,7 @@ function spark(s, ex, now){
     if (e.time < x0 || e.time > x1) continue;
     const c = e.type === 'H' ? '#1276b0' : '#ff9500';
     g += `<circle cx="${X(e.time)}" cy="${Y(e.h)}" r="3" fill="${c}"/>` +
-         `<text x="${X(e.time)}" y="${e.type==='H' ? Y(e.h)-6 : Y(e.h)+13}" text-anchor="middle" font-size="9" font-weight="600" fill="${c}">${clock(e.time)}</text>`;
+         `<text x="${X(e.time)}" y="${e.type==='H' ? Y(e.h)-6 : Y(e.h)+13}" text-anchor="middle" font-size="10.5" font-weight="600" fill="${c}">${clock(e.time)}</text>`;
   }
   g += `<line x1="${X(now)}" y1="2" x2="${X(now)}" y2="${H}" stroke="#ff3b30" stroke-width="1.4"/>`;
   $('spark').innerHTML = g;
@@ -908,26 +908,34 @@ function renderWxBody(){
   // meteogram: bewolkingslagen (hoog/midden/laag, grijstint = dichtheid)
   // boven een temperatuurlijn met neerslagbalken
   if (temps.length > 3){
-    const W = 360, H = 128, pT = 42, pB = 14, M = N;
+    const W = 360, H = 148, pT = 52, pB = 16, M = N;
     let tmin = Math.min(...temps), tmax = Math.max(...temps);
     const span = Math.max(tmax - tmin, 2); tmin -= span * .15; tmax += span * .15;
     const rvals = rains.slice(i0, i0 + N).filter(v => v !== null && v !== undefined);
     const rmax = Math.max(1, ...rvals);
     const X = i => i / (M - 1) * W, Y = v => pT + (tmax - v) / (tmax - tmin) * (H - pT - pB);
     let g = '';
-    const stripH = 9;
-    [['cloud_cover_high','hoog'],['cloud_cover_mid','mid'],['cloud_cover_low','laag']].forEach(([key, lab], li) => {
-      const y = 2 + li * (stripH + 2);
-      g += `<text x="0" y="${y + 7.5}" font-size="7.5" fill="#8e8e93">${lab}</text>`;
+    const stripH = 12;
+    const hasData = a => !!a && a.slice(i0, i0 + N).some(v => v !== null && v !== undefined);
+    let strips = [['cloud_cover_high','hoog'],['cloud_cover_mid','mid'],['cloud_cover_low','laag']]
+      .filter(([key]) => hasData(h[key]));
+    // fallback: geen laagdata (model levert die niet) -> één strook totaalbewolking
+    if (!strips.length && hasData(h.cloud_cover)) strips = [['cloud_cover','wolken']];
+    strips.forEach(([key, lab], li) => {
+      const y = 2 + li * (stripH + 3);
+      // lichte achtergrondbaan zodat de strook ook bij heldere lucht zichtbaar is
+      g += `<rect x="0" y="${y}" width="${W}" height="${stripH}" fill="rgba(120,120,128,.08)"/>`;
       const arr = h[key];
-      if (!arr) return;
       const cw = Math.max(2, W / M + 0.5);
       for (let i = 0; i < M; i++){
         const cov = arr[i0 + i];
-        if (cov === null || cov === undefined) continue;
+        if (cov === null || cov === undefined || cov < 3) continue;
         g += `<rect x="${(X(i) - cw / 2).toFixed(1)}" y="${y}" width="${cw.toFixed(1)}" height="${stripH}"` +
-             ` fill="rgba(125,132,146,${(0.05 + 0.85 * cov / 100).toFixed(2)})"/>`;
+             ` fill="rgba(125,132,146,${(0.15 + 0.75 * cov / 100).toFixed(2)})"/>`;
       }
+      // label ná de wolkenrects, anders verdwijnt het onder dichte bewolking
+      g += `<text x="2" y="${y + stripH - 2.5}" font-size="9.5" font-weight="600" fill="#6e6e73"` +
+           ` stroke="rgba(255,255,255,.6)" stroke-width="2" paint-order="stroke">${lab}</text>`;
     });
     for (let i = 0; i < M; i++){
       const r = rains[i0 + i];
@@ -947,16 +955,16 @@ function renderWxBody(){
     g += `<path d="${line}" fill="none" stroke="#ff9500" stroke-width="2"/>`;
     if (wxRange === 'dag'){
       for (let i = 0; i < M; i += 6)
-        g += `<text x="${X(i)}" y="${H - 2}" font-size="9" fill="#8e8e93" text-anchor="middle">${times[i0 + i].slice(11, 13)}u</text>`;
+        g += `<text x="${X(i)}" y="${H - 3}" font-size="10.5" fill="#8e8e93" text-anchor="middle">${times[i0 + i].slice(11, 13)}u</text>`;
     } else {
       for (let i = 0; i < M; i++)
         if (times[i0 + i].endsWith('T00:00')){
           const dd = new Date(times[i0 + i].slice(0, 10) + 'T12:00Z');
           g += `<line x1="${X(i)}" y1="${pT}" x2="${X(i)}" y2="${H - pB}" stroke="rgba(120,120,128,.18)"/>` +
-               `<text x="${X(i) + 2}" y="${H - 2}" font-size="9" fill="#8e8e93">${DAYS_NL[dd.getUTCDay()]}</text>`;
+               `<text x="${X(i) + 2}" y="${H - 3}" font-size="10.5" fill="#8e8e93">${DAYS_NL[dd.getUTCDay()]}</text>`;
         }
     }
-    g += `<text x="4" y="${Y(Math.max(...temps)) - 4}" font-size="9.5" fill="#ff9500" font-weight="600">${Math.round(Math.max(...temps))}°</text>`;
+    g += `<text x="4" y="${Y(Math.max(...temps)) - 4}" font-size="11" fill="#ff9500" font-weight="600">${Math.round(Math.max(...temps))}°</text>`;
     $('wxChart').innerHTML = g;
   } else $('wxChart').innerHTML = '';
   if (wxRange === 'week'){
