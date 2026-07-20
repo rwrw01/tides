@@ -987,12 +987,16 @@ async function loadBortle(lat, lon){
 }
 
 /* -------- panelen: swipe, volgorde en aan/uit -------- */
-const PANEL_DEFS = [ { id:'getij', naam:'Getij' }, { id:'weer', naam:'Weer' },
-                    { id:'hemel', naam:'Hemel' } ];
+const PANEL_DEFS = [ { id:'weer', naam:'Weer' }, { id:'hemel', naam:'Hemel' },
+                    { id:'getij', naam:'Getij' } ];
 let panelCfg = null;
 try { panelCfg = JSON.parse(localStorage.getItem('panelcfg')); } catch(e){}
-if (!panelCfg || !Array.isArray(panelCfg.order) || !Array.isArray(panelCfg.off))
-  panelCfg = { order: PANEL_DEFS.map(p => p.id), off: [] };
+const cfgValid = panelCfg && Array.isArray(panelCfg.order) && Array.isArray(panelCfg.off);
+if (!cfgValid || panelCfg.v !== 2){
+  // v2-migratie: nieuwe standaardvolgorde (weer, hemel, getij);
+  // de aan/uit-keuzes van de gebruiker blijven behouden
+  panelCfg = { v: 2, order: PANEL_DEFS.map(p => p.id), off: cfgValid ? panelCfg.off : [] };
+}
 panelCfg.order = panelCfg.order.filter(id => PANEL_DEFS.some(p => p.id === id));
 for (const p of PANEL_DEFS) if (!panelCfg.order.includes(p.id)) panelCfg.order.push(p.id);
 function applyPanels(){
