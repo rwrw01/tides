@@ -129,7 +129,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
 .wx-now .t{font-size:2.1rem;font-weight:700;letter-spacing:-.03em}
 .wx-now .ic{font-size:1.8rem}
 .wx-now .d{font-size:.78rem;color:var(--text-2);line-height:1.4}
-#wxChart{width:100%;height:88px;display:block;margin-top:8px}
+#wxChart{width:100%;height:128px;display:block;margin-top:8px}
+.wx-note{font-size:.68rem;color:var(--text-2);margin-top:3px}
+.wx-htable{display:flex;margin-top:6px;font-size:.78rem}
+.wx-htable .hlab{display:flex;flex-direction:column;color:var(--text-2);padding-right:.45rem;flex-shrink:0}
+.wx-htable .hlab div{height:1.5rem;display:flex;align-items:center;font-size:.66rem;text-transform:uppercase;letter-spacing:.04em}
+.wx-htable .hscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;flex:1;scrollbar-width:none}
+.wx-htable .hscroll::-webkit-scrollbar{display:none}
+.wx-htable .hrow{display:flex;width:max-content}
+.wx-htable .hrow div{width:2.6rem;height:1.5rem;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;white-space:nowrap}
+.warr{display:inline-block;margin-right:2px;font-size:.78rem;color:var(--blue)}
 .wx-days{margin-top:4px}
 .wx-row{display:flex;align-items:center;gap:.45rem;padding:.3rem 0;border-bottom:1px solid var(--sep);font-size:.85rem}
 .wx-row:last-child{border-bottom:0}
@@ -267,11 +276,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
           <button data-range="dag" id="rangeDag">Dag (per uur)</button>
           <button data-range="week" id="rangeWeek">Week</button>
         </div>
-        <svg id="wxChart" viewBox="0 0 360 88" preserveAspectRatio="none" aria-label="Temperatuur en neerslag"></svg>
+        <svg id="wxChart" viewBox="0 0 360 128" preserveAspectRatio="none" aria-label="Temperatuur en neerslag"></svg>
         <div class="wx-days" id="wxDays"></div>
         <div class="wx-src">Model:
           <select id="wxModel" aria-label="Weermodel kiezen"></select>
         </div>
+        <div class="wx-note" id="wxModelNote"></div>
       </div>
     </section>
   </div>
@@ -754,6 +764,7 @@ function renderAstro(lat, lon, offset){
 
 /* -------- weer (Open-Meteo forecast, expliciete modelkeuze) -------- */
 const WX_MODELS = [
+  { id:'blend',                naam:'Aanbevolen · ICON-EU → ECMWF' },
   { id:'best_match',           naam:'Automatisch (beste match)' },
   { id:'knmi_seamless',        naam:'KNMI Harmonie · 2–5,5 km' },
   { id:'icon_seamless',        naam:'DWD ICON · 2–11 km' },
@@ -761,7 +772,7 @@ const WX_MODELS = [
   { id:'meteofrance_seamless', naam:'Météo-France · 1,5–25 km' },
   { id:'gfs_seamless',         naam:'NOAA GFS · 25 km' },
 ];
-let wxModel = 'best_match';
+let wxModel = 'blend';
 try { const m = localStorage.getItem('wxmodel'); if (WX_MODELS.some(x => x.id === m)) wxModel = m; } catch(e){}
 const WMO = c => ({0:['☀️','onbewolkt'],1:['🌤️','vrijwel onbewolkt'],2:['⛅','half bewolkt'],3:['☁️','bewolkt'],
   45:['🌫️','mist'],48:['🌫️','aanvriezende mist'],51:['🌦️','lichte motregen'],53:['🌦️','motregen'],55:['🌧️','dichte motregen'],
@@ -770,14 +781,51 @@ const WMO = c => ({0:['☀️','onbewolkt'],1:['🌤️','vrijwel onbewolkt'],2:
   80:['🌦️','buien'],81:['🌧️','buien'],82:['⛈️','zware buien'],85:['🌨️','sneeuwbuien'],86:['🌨️','sneeuwbuien'],
   95:['⛈️','onweer'],96:['⛈️','onweer met hagel'],99:['⛈️','zwaar onweer']}[c] || ['·','—']);
 const WINDDIR = d => ['N','NO','O','ZO','Z','ZW','W','NW'][Math.round(d/45) % 8];
+// blend: korte termijn ICON-EU (eerste 72 u / 3 dagen), daarna ECMWF IFS.
+// Beide modellen in één request; de API suffixt de velden per model en
+// deze functie stikt ze aan elkaar. Ontbreekt een waarde bij het primaire
+// model, dan vult het andere model aan; platte velden blijven onaangetast.
+function blendModels(j){
+  const H72 = 72, D3 = 3;
+  const stitch = (obj, vars, cut) => {
+    if (!obj) return;
+    const n = (obj.time || []).length;
+    for (const v of vars){
+      if (obj[v]) continue;
+      const a = obj[v + '_icon_eu'], b = obj[v + '_ecmwf_ifs025'];
+      if (!a && !b) continue;
+      obj[v] = Array.from({ length: n }, (_, i) => {
+        const p = i < cut ? (a ? a[i] : null) : (b ? b[i] : null);
+        if (p !== null && p !== undefined) return p;
+        const q = i < cut ? (b ? b[i] : null) : (a ? a[i] : null);
+        return q !== null && q !== undefined ? q : null;
+      });
+    }
+  };
+  stitch(j.hourly, ['temperature_2m','precipitation','precipitation_probability','cloud_cover',
+    'cloud_cover_low','cloud_cover_mid','cloud_cover_high','weather_code',
+    'wind_speed_10m','wind_direction_10m','pressure_msl'], H72);
+  stitch(j.daily, ['weather_code','temperature_2m_max','temperature_2m_min',
+    'precipitation_sum','precipitation_probability_max'], D3);
+  const c = j.current || {};
+  for (const k of Object.keys(c)){
+    const m = k.match(/^(.*)_icon_eu$/);
+    if (m && c[m[1]] === undefined){
+      c[m[1]] = c[k] !== null && c[k] !== undefined ? c[k] : c[m[1] + '_ecmwf_ifs025'];
+    }
+  }
+  return j;
+}
 async function fetchWeather(lat, lon){
   let url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat.toFixed(4) + '&longitude=' + lon.toFixed(4) +
     '&current=temperature_2m,apparent_temperature,dew_point_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m' +
-    '&hourly=temperature_2m,precipitation,cloud_cover,weather_code' +
+    '&hourly=temperature_2m,precipitation,precipitation_probability,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,weather_code,wind_speed_10m,wind_direction_10m,pressure_msl' +
     '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max' +
     '&forecast_days=7&timezone=auto&wind_speed_unit=kmh';
-  if (wxModel !== 'best_match') url += '&models=' + wxModel;
+  if (wxModel === 'blend') url += '&models=icon_eu,ecmwf_ifs025';
+  else if (wxModel !== 'best_match') url += '&models=' + wxModel;
   const j = await fetchJson(url);
+  blendModels(j);
   j._offset = (j.utc_offset_seconds || 0) * 1000;
   return j;
 }
@@ -798,6 +846,7 @@ function renderWeer(wx){
   $('wxDew').textContent = Math.round(c.dew_point_2m) + '°';
   $('wxDewS').textContent = c.dew_point_2m >= 16 ? 'drukkend' : c.dew_point_2m >= 12 ? 'ietwat vochtig' : 'fris';
   lastWx = wx;
+  window._lastWx = wx; // testhook
   renderWxBody();
 }
 let lastWx = null, wxRange = 'week';
@@ -811,25 +860,47 @@ function renderWxBody(){
   let i0 = times.findIndex(t => Date.parse(t + ':00Z') >= nowLocal - 3600e3);
   if (i0 < 0) i0 = 0;
   const N = wxRange === 'dag' ? Math.min(24, times.length - i0) : (times.length - i0);
-  const temps = (h.temperature_2m || []).slice(i0, i0 + N).filter(v => v !== null);
-  const rains = (h.precipitation || []).slice(i0, i0 + N);
-  // grafiek: dag = 24 uur met uurticks, week = hele reeks met dagticks
+  const tempsAll = h.temperature_2m || [], rains = h.precipitation || [];
+  const temps = tempsAll.slice(i0, i0 + N).filter(v => v !== null && v !== undefined);
+  // meteogram: bewolkingslagen (hoog/midden/laag, grijstint = dichtheid)
+  // boven een temperatuurlijn met neerslagbalken
   if (temps.length > 3){
-    const W = 360, H = 88, pT = 14, pB = 14, M = temps.length;
+    const W = 360, H = 128, pT = 42, pB = 14, M = N;
     let tmin = Math.min(...temps), tmax = Math.max(...temps);
     const span = Math.max(tmax - tmin, 2); tmin -= span * .15; tmax += span * .15;
-    const rmax = Math.max(1, ...rains.filter(v => v !== null));
+    const rvals = rains.slice(i0, i0 + N).filter(v => v !== null && v !== undefined);
+    const rmax = Math.max(1, ...rvals);
     const X = i => i / (M - 1) * W, Y = v => pT + (tmax - v) / (tmax - tmin) * (H - pT - pB);
     let g = '';
+    const stripH = 9;
+    [['cloud_cover_high','hoog'],['cloud_cover_mid','mid'],['cloud_cover_low','laag']].forEach(([key, lab], li) => {
+      const y = 2 + li * (stripH + 2);
+      g += `<text x="0" y="${y + 7.5}" font-size="7.5" fill="#8e8e93">${lab}</text>`;
+      const arr = h[key];
+      if (!arr) return;
+      const cw = Math.max(2, W / M + 0.5);
+      for (let i = 0; i < M; i++){
+        const cov = arr[i0 + i];
+        if (cov === null || cov === undefined) continue;
+        g += `<rect x="${(X(i) - cw / 2).toFixed(1)}" y="${y}" width="${cw.toFixed(1)}" height="${stripH}"` +
+             ` fill="rgba(125,132,146,${(0.05 + 0.85 * cov / 100).toFixed(2)})"/>`;
+      }
+    });
     for (let i = 0; i < M; i++){
-      const r = rains[i];
+      const r = rains[i0 + i];
       if (r > 0){
         const bh = r / rmax * (H - pT - pB) * .8, bw = Math.max(2, W / M * .55);
-        g += `<rect x="${(X(i) - bw/2).toFixed(1)}" y="${(H - pB - bh).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="1.5" fill="rgba(90,200,250,.55)"/>`;
+        g += `<rect x="${(X(i) - bw / 2).toFixed(1)}" y="${(H - pB - bh).toFixed(1)}" width="${bw.toFixed(1)}"` +
+             ` height="${bh.toFixed(1)}" rx="1.5" fill="rgba(90,200,250,.55)"/>`;
       }
     }
-    let line = '';
-    temps.forEach((v, i) => line += (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1) + ' ');
+    let line = '', started = false;
+    for (let i = 0; i < M; i++){
+      const v = tempsAll[i0 + i];
+      if (v === null || v === undefined) continue;
+      line += (started ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1) + ' ';
+      started = true;
+    }
     g += `<path d="${line}" fill="none" stroke="#ff9500" stroke-width="2"/>`;
     if (wxRange === 'dag'){
       for (let i = 0; i < M; i += 6)
@@ -845,7 +916,6 @@ function renderWxBody(){
     g += `<text x="4" y="${Y(Math.max(...temps)) - 4}" font-size="9.5" fill="#ff9500" font-weight="600">${Math.round(Math.max(...temps))}°</text>`;
     $('wxChart').innerHTML = g;
   } else $('wxChart').innerHTML = '';
-  // rijen: week = 7 dagen, dag = komende 24 uur
   if (wxRange === 'week'){
     const dt = d.time || [];
     const wmin = Math.min(...(d.temperature_2m_min || [0]).filter(v => v !== null));
@@ -853,7 +923,7 @@ function renderWxBody(){
     $('wxDays').innerHTML = dt.map((day, i) => {
       const code = d.weather_code ? d.weather_code[i] : null;
       const mn = (d.temperature_2m_min || [])[i], mx = (d.temperature_2m_max || [])[i];
-      if (mn === null || mx === null) return '';
+      if (mn === null || mn === undefined || mx === null || mx === undefined) return '';
       const dd = new Date(day + 'T12:00Z');
       const [dic] = WMO(code);
       const pv = d.precipitation_sum ? d.precipitation_sum[i] : null;
@@ -867,18 +937,29 @@ function renderWxBody(){
         `<span class="tmax">${Math.round(mx)}°</span></div>`;
     }).join('');
   } else {
-    const rows = [];
+    // horizontaal scrollende uurtabel (Ventusky-stijl): komende 48 uur
     const ht = h.temperature_2m || [], hp = h.precipitation || [];
-    for (let i = i0; i < Math.min(i0 + 24, times.length); i++){
+    const hw2 = h.wind_speed_10m || [], hd2 = h.wind_direction_10m || [];
+    const hpr = h.pressure_msl || [], hpp = h.precipitation_probability || [];
+    const cols = { t: [], ic: [], tp: [], wd: [], rn: [], ka: [], dr: [] };
+    for (let i = i0; i < Math.min(i0 + 48, times.length); i++){
       if (ht[i] === null || ht[i] === undefined) continue;
       const [ic2] = WMO(h.weather_code ? h.weather_code[i] : null);
-      const pv = hp[i];
-      rows.push(`<div class="wx-row"><span class="dy">${times[i].slice(11, 13)}u</span>` +
-        `<span class="ic">${ic2}</span>` +
-        `<span class="pr">${pv > 0 ? pv.toFixed(1) + ' mm' : ''}</span>` +
-        `<span style="flex:1"></span><span class="tmax">${Math.round(ht[i])}°</span></div>`);
+      cols.t.push('<div>' + times[i].slice(11, 13) + '</div>');
+      cols.ic.push('<div>' + ic2 + '</div>');
+      cols.tp.push('<div>' + Math.round(ht[i]) + '°</div>');
+      cols.wd.push('<div>' + (hd2[i] !== null && hd2[i] !== undefined ?
+        '<span class="warr" style="transform:rotate(' + Math.round(hd2[i] + 180) + 'deg)">↑</span>' : '') +
+        (hw2[i] !== null && hw2[i] !== undefined ? Math.round(hw2[i]) : '–') + '</div>');
+      cols.rn.push('<div>' + (hp[i] > 0 ? (+hp[i]).toFixed(1) : '·') + '</div>');
+      cols.ka.push('<div>' + (hpp[i] !== null && hpp[i] !== undefined ? Math.round(hpp[i]) + '%' : '–') + '</div>');
+      cols.dr.push('<div>' + (hpr[i] !== null && hpr[i] !== undefined ? Math.round(hpr[i]) : '–') + '</div>');
     }
-    $('wxDays').innerHTML = rows.join('');
+    $('wxDays').innerHTML = '<div class="wx-htable"><div class="hlab">' +
+      ['uur', '', '°C', 'wind', 'mm', 'kans', 'hPa'].map(l => '<div>' + l + '</div>').join('') +
+      '</div><div class="hscroll">' +
+      ['t', 'ic', 'tp', 'wd', 'rn', 'ka', 'dr'].map(k => '<div class="hrow">' + cols[k].join('') + '</div>').join('') +
+      '</div></div>';
   }
 }
 for (const id of ['rangeDag', 'rangeWeek'])
@@ -1201,8 +1282,12 @@ function loadWeather(lat, lon){
 const sel = $('wxModel');
 sel.innerHTML = WX_MODELS.map(m => `<option value="${m.id}">${m.naam}</option>`).join('');
 sel.value = wxModel;
+const wxNote = () => { $('wxModelNote').textContent =
+  wxModel === 'blend' ? '≤ 3 dagen ICON-EU · daarna ECMWF IFS (opendata, 25 km)' : ''; };
+wxNote();
 sel.addEventListener('change', () => {
   wxModel = sel.value;
+  wxNote();
   try { localStorage.setItem('wxmodel', wxModel); } catch(e){}
   if (lastPin) loadWeather(lastPin.lat, lastPin.lon);
 });

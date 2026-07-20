@@ -191,7 +191,9 @@ test.describe('Getijden-app (UI; tegels/radar/atlas live, Open-Meteo gestubd)', 
     await page.evaluate(() => selectLocation(52.115, 4.24));
     await expect(page.locator('#wx')).toBeVisible({ timeout: 25_000 });
     await page.click('#rangeDag');
-    await page.waitForFunction(() => document.querySelectorAll('#wxDays .wx-row').length >= 20, null, { timeout: 10_000 });
+    await page.waitForFunction(() =>
+      document.querySelectorAll('#wxDays .wx-htable .hrow').length === 7 &&
+      document.querySelector('#wxDays .hrow').children.length >= 20, null, { timeout: 10_000 });
     await page.click('#rangeWeek');
     await expect(page.locator('#wxDays .wx-row')).toHaveCount(7, { timeout: 10_000 });
   });
