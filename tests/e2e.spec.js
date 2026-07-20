@@ -150,7 +150,8 @@ test.describe('Getijden-app (UI; tegels/radar/atlas live, Open-Meteo gestubd)', 
     expect(st.c.lat).toBeGreaterThan(20);            // teruggeduwd binnen Europa-grenzen
     expect(st.c.lng).toBeGreaterThan(-36);
     await page.evaluate(() => window._map.setZoom(6)); // kaart blijft bedienbaar
-    expect(await page.evaluate(() => window._map.getZoom())).toBe(6);
+    // setZoom animeert; pollen tot de animatie klaar is (direct samplen is een race)
+    await expect.poll(() => page.evaluate(() => window._map.getZoom()), { timeout: 5_000 }).toBe(6);
   });
 
   test('locatieknop werkt, ook na ver uitzoomen', async ({ page, context }) => {
