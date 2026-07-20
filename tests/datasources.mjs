@@ -30,7 +30,18 @@ const checks = [
       const ok = j.current && j.current.temperature_2m !== null &&
         (j.daily?.temperature_2m_max || []).filter(x => x !== null).length === 7 &&
         (j.hourly?.cloud_cover || []).filter(x => x !== null).length > 100;
-      return ok ? 'ok: current + 7 dagen + bewolking' : 'te weinig data: ' + JSON.stringify(j).slice(0, 120);
+      return ok ? 'ok: current + 7 dagen + bewolking' : 'onvolledig: ' + JSON.stringify(j).slice(0, 120);
+    } },
+  { name: 'Open-Meteo weer — blend ICON-EU + ECMWF (app-standaard)', critical: true, type: 'json',
+    url: 'https://api.open-meteo.com/v1/forecast?latitude=52.115&longitude=4.24&current=temperature_2m&hourly=temperature_2m,cloud_cover_low,cloud_cover_mid,cloud_cover_high,wind_speed_10m,wind_direction_10m,pressure_msl,precipitation_probability&daily=temperature_2m_max&forecast_days=7&timezone=auto&models=icon_eu,ecmwf_ifs025',
+    validate: j => {
+      const h = j.hourly || {};
+      const icon = (h.temperature_2m_icon_eu || []).filter(x => x !== null).length;
+      const ec = (h.temperature_2m_ecmwf_ifs025 || []).filter(x => x !== null).length;
+      const druk = (h.pressure_msl_icon_eu || h.pressure_msl_ecmwf_ifs025 || []).filter(x => x !== null).length;
+      return icon > 50 && ec > 100 && druk > 50
+        ? 'ok: icon ' + icon + 'u, ecmwf ' + ec + 'u, druk ' + druk + 'u'
+        : 'onvolledig: icon=' + icon + ' ecmwf=' + ec + ' druk=' + druk;
     } },
   { name: 'Open-Meteo weer — model ECMWF expliciet', critical: false, type: 'json',
     url: 'https://api.open-meteo.com/v1/forecast?latitude=52.115&longitude=4.24&current=temperature_2m&daily=temperature_2m_max&forecast_days=7&timezone=auto&models=ecmwf_ifs025',
@@ -95,7 +106,7 @@ for (const c of checks) {
     } else if (c.type === 'json') {
       const j = await res.json();
       detail = c.validate ? c.validate(j) : 'ok';
-      status = detail.startsWith('GEEN') || detail.startsWith('te weinig') ? '❌' : '✅';
+      status = detail.startsWith('GEEN') || detail.startsWith('te weinig') || detail.startsWith('onvolledig') ? '❌' : '✅';
       if (c.name.startsWith('RainViewer') && j.radar?.past?.length) {
         const f = j.radar.past[j.radar.past.length - 1];
         rainviewerTile = j.host + f.path + '/256/6/32/21/2/1_1.png';
