@@ -166,6 +166,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
          font-size:.66rem;color:var(--text-2);text-align:center}
 .colofon a{color:var(--text-2)}
 .leaflet-control-attribution{font-size:9px !important;background:rgba(255,255,255,.6) !important}
+/* brede schermen (iPad/desktop): zwevende kaart links i.p.v. full-width sheet,
+   anders rekken tegels en meteogram onleesbaar uit */
+@media (min-width: 700px){
+  .sheet{left:16px;right:auto;width:400px;bottom:16px;border-radius:16px;
+         box-shadow:0 8px 30px rgba(0,0,0,.25)}
+  .sheet.collapsed{transform:translateY(calc(100% - 84px))}
+  .panel{max-height:min(52vh, 560px)}
+  .search-bar,.radar-bar{left:auto;width:420px}
+  .search-results{left:auto;width:420px}
+}
 </style>
 </head>
 <body>

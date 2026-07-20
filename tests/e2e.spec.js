@@ -312,6 +312,15 @@ test.describe('Getijden-app (UI; tegels/radar/atlas live, Open-Meteo gestubd)', 
     await expect(page.locator('#nxDark')).toHaveText(/\d{2}:\d{2}–\d{2}:\d{2}/);
   });
 
+  test('breed scherm (iPad): sheet wordt zwevende kaart links', async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    const r = await page.evaluate(() => {
+      const b = document.getElementById('sheet').getBoundingClientRect();
+      return { w: b.width, l: b.left };
+    });
+    expect(r.w).toBeLessThanOrEqual(420);
+    expect(r.l).toBe(16);
+  });
 });
 
 // Aparte context: hier is de service worker WEL actief. Open-Meteo wordt op
