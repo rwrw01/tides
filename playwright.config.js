@@ -11,6 +11,10 @@ module.exports = defineConfig({
     ...devices['iPhone 13'],
     browserName: 'chromium',
     screenshot: 'only-on-failure',
+    // de app-SW claimt pagina's (clients.claim); fetches lopen dan buiten
+    // page.route om en de Open-Meteo-stubs vallen weg. Blokkeren dus;
+    // SW-gedrag test apart met een fetch-shim (tests/e2e.spec.js, Offline).
+    serviceWorkers: 'block',
   },
   webServer: {
     command: 'python3 -m http.server 8080',

@@ -311,9 +311,70 @@ test.describe('Getijden-app (UI; tegels/radar/atlas live, Open-Meteo gestubd)', 
     await expect(page.locator('#nxDark')).toHaveText(/\d{2}:\d{2}–\d{2}:\d{2}/);
   });
 
-  test('service worker registreert', async ({ page }) => {
-    const ok = await page.evaluate(() =>
-      navigator.serviceWorker.register('./sw.js').then(r => !!r, () => false));
-    expect(ok).toBeTruthy();
+});
+
+// Aparte context: hier is de service worker WEL actief. Open-Meteo wordt op
+// JS-niveau geshimd (addInitScript) omdat page.route niet werkt zodra de SW
+// de pagina controleert; de shim heeft een offline-vlag in sessionStorage.
+test.describe('Offline (service worker actief)', () => {
+  test.use({ serviceWorkers: 'allow' });
+  test.beforeEach(async ({ page }) => {
+    const marine = marineFixture(new URL('https://x/?latitude=52.115&longitude=4.24'));
+    const forecast = forecastFixture();
+    await page.addInitScript(({ marine, forecast }) => {
+      const rf = window.fetch;
+      window.fetch = function(url, o){
+        if (sessionStorage.getItem('off') === '1') return Promise.reject(new TypeError('Failed to fetch'));
+        const u = String(url);
+        const j = d => Promise.resolve({ ok: true, status: 200, json: async () => d });
+        if (u.includes('marine-api.open-meteo.com')) return j(marine);
+        if (u.includes('api.open-meteo.com/v1/forecast')) return j(forecast);
+        if (u.includes('nominatim.openstreetmap.org')) return j({ error: 'Unable to geocode' });
+        return rf.call(this, url, o);
+      };
+    }, { marine, forecast });
+    await page.goto('/app/index.html');
+  });
+
+  test('service worker registreert en cachet de schil', async ({ page }) => {
+    await page.waitForFunction(() => navigator.serviceWorker.controller !== null,
+      null, { timeout: 20_000 });
+    const shell = await page.evaluate(() =>
+      caches.match('./index.html').then(r => !!r));
+    expect(shell).toBeTruthy();
+  });
+
+  test('offline herstart: snapshots + tegelcache dragen de app', async ({ page, context }) => {
+    // online-fase: SW actief, pin zetten, tegels op zoom 8 laten cachen
+    await page.waitForFunction(() => navigator.serviceWorker.controller !== null,
+      null, { timeout: 20_000 });
+    await page.waitForFunction(() => caches.match('./index.html').then(r => !!r),
+      null, { timeout: 20_000 });
+    await page.evaluate(() => selectLocation(52.115, 4.24));
+    await expect(page.locator('#data')).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('#wx')).toBeVisible({ timeout: 20_000 });
+    await page.evaluate(() => map.setView([52.115, 4.24], 8, { animate: false }));
+    await page.waitForFunction(() =>
+      caches.open('getijden-tiles-v1').then(c => c.keys())
+        .then(k => k.filter(r => r.url.includes('/8/')).length >= 4),
+      null, { timeout: 25_000 });
+    await page.waitForFunction(() =>
+      !!localStorage.getItem('snap_marine') && !!localStorage.getItem('snap_wx'));
+
+    // offline-fase: alle netwerk weg, herstart
+    await page.evaluate(() => sessionStorage.setItem('off', '1'));
+    await context.setOffline(true);
+    await page.reload();
+
+    await expect(page.locator('#data')).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('#staleNote')).toBeVisible();
+    await expect(page.locator('#staleNote')).toHaveText(/offline — gegevens van/);
+    await expect(page.locator('#wx')).toBeVisible();
+    await expect(page.locator('#sunrise')).toHaveText(/\d{2}:\d{2}|—/); // astro client-side
+    // laatst bekeken gebied komt uit de tegelcache
+    await page.waitForFunction(() =>
+      document.querySelectorAll('#map img.leaflet-tile-loaded[src*="/8/"]').length >= 1,
+      null, { timeout: 20_000 });
+    await context.setOffline(false);
   });
 });

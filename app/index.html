@@ -80,6 +80,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
 .pill.meso{background:rgba(10,132,255,.15);color:var(--blue)}
 .pill.micro{background:rgba(255,149,0,.15);color:var(--orange)}
 .hint{font-size:.9rem;color:var(--text-2);text-align:center;padding:.6rem 0 .4rem}
+.stale{font-size:.72rem;color:var(--orange);font-weight:600;margin:2px 0 2px}
 .hint.err{color:var(--red)}
 .tiles{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
 .tile{background:var(--tile);border-radius:12px;padding:.55rem .65rem;min-width:0}
@@ -211,6 +212,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',syste
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h10v2H4zM17 6h3v2h-3zM4 11h4v2H4zM11 11h9v2h-9zM4 16h13v2H4zM20 16h0"/><circle cx="15.5" cy="7" r="2.4"/><circle cx="9.5" cy="12" r="2.4"/><circle cx="18.5" cy="17" r="2.4"/></svg>
     </button>
   </div>
+  <div class="stale" id="staleNote" style="display:none"></div>
   <div class="panels" id="panels">
     <section class="panel" data-panel="getij">
       <div class="ptitle">Getij</div>
@@ -450,6 +452,37 @@ $('radarPlay').addEventListener('click', () => {
   radarTimer = setInterval(() => radarShow((radarIdx + 1) % radarFrames.length), 600);
 });
 
+/* -------- offline-snapshots: laatste geslaagde data per pin -------- */
+function saveSnap(kind, lat, lon, data){
+  try { localStorage.setItem('snap_' + kind, JSON.stringify({ lat, lon, ts: Date.now(), data })); } catch(e){}
+}
+function loadSnap(kind, lat, lon){
+  try {
+    const s = JSON.parse(localStorage.getItem('snap_' + kind));
+    if (!s || Math.abs(s.lat - lat) > 0.05 || Math.abs(s.lon - lon) > 0.05) return null;
+    return s;
+  } catch(e){ return null; }
+}
+const staleState = { marine: false, wx: false, ts: 0 };
+function setStale(part, on, ts){
+  staleState[part] = on;
+  if (ts) staleState.ts = Math.max(staleState.ts, ts);
+  const any = staleState.marine || staleState.wx;
+  $('staleNote').style.display = any ? 'block' : 'none';
+  if (any){
+    const d = new Date(staleState.ts);
+    $('staleNote').textContent = '📡 offline — gegevens van ' + DAYS_NL[d.getDay()] + ' ' +
+      String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  }
+}
+function pruneWx(wx){
+  // suffixvelden van de blend niet mee opslaan: halveert de snapshotgrootte
+  const c = JSON.parse(JSON.stringify(wx));
+  for (const o of [c.hourly, c.daily, c.current]) if (o)
+    for (const k of Object.keys(o)) if (/_icon_eu$|_ecmwf_ifs025$/.test(k)) delete o[k];
+  return c;
+}
+
 /* -------- data -------- */
 async function fetchJson(url, tries = 2){
   for (let a = 0; a < tries; a++){
@@ -552,8 +585,18 @@ function selectLocation(lat, lon, name){
     try { localStorage.setItem('tidepin', JSON.stringify(lastPin)); } catch(e){}
     render(s);
     renderAstro(lat, lon, s.utcOffset);
+    saveSnap('marine', lat, lon, s);
+    setStale('marine', false);
   }).catch(err => {
     if (seq !== tideSeq) return;
+    const snap = (!err || !err.soft) ? loadSnap('marine', lat, lon) : null;
+    if (snap){
+      // offline: laatste geslaagde getijdedata tonen met tijdstempel
+      render(snap.data);
+      renderAstro(lat, lon, snap.data.utcOffset);
+      setStale('marine', true, snap.ts);
+      return;
+    }
     hint.className = err && err.soft ? 'hint' : 'hint err';
     hint.textContent = (err && err.soft ? '🌍 ' : '⚠️ ') + (err.message || 'Er ging iets mis');
     if (err && err.soft){ try { localStorage.setItem('tidepin', JSON.stringify(lastPin)); } catch(e){} }
@@ -1270,8 +1313,18 @@ function loadWeather(lat, lon){
     if (seq !== wxSeq) return;
     renderWeer(wx);
     renderNacht(lat, lon, wx);
+    saveSnap('wx', lat, lon, pruneWx(wx));
+    setStale('wx', false);
   }).catch(err => {
     if (seq !== wxSeq) return;
+    const snap = loadSnap('wx', lat, lon);
+    if (snap){
+      // offline: laatste geslaagde weerdata tonen met tijdstempel
+      renderWeer(snap.data);
+      renderNacht(lat, lon, snap.data);
+      setStale('wx', true, snap.ts);
+      return;
+    }
     if (lastWx) return; // houd de vorige weergave; beter dan alles weghalen
     $('wxHint').style.display = 'block';
     $('wxHint').textContent = '⚠️ ' + (err.message || 'Weerdata niet beschikbaar');
@@ -1317,6 +1370,9 @@ try {
     selectLocation(saved.lat, saved.lon, typeof saved.name === 'string' ? saved.name : undefined);
   }
 } catch(e){}
+window.addEventListener('online', () => {
+  if (lastPin) selectLocation(lastPin.lat, lastPin.lon, lastPin.name);
+});
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 </script>
 </body>
